@@ -38,7 +38,6 @@ Application::Application(
         modbus_(bus_, std::make_unique<FakeModbusMasterAdapter>()),
         ws_(bus_),
         control_(bus_),
-        modbus_polling_(bus_),
         loop_(bus_)
 {
     if (config_.enable_http)
@@ -79,8 +78,6 @@ void Application::init()
         }
         
     }
-
-    modbus_polling_.start();
 }
 
 void Application::run()
@@ -104,7 +101,6 @@ void Application::stop()
         http_->stop();
     }
 
-    modbus_polling_.stop();
     modbus_.stop();
     loop_.stop();
 }

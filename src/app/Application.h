@@ -8,7 +8,6 @@
 #include "modules/http/IHttpRouteProvider.h"
 #include "modules/ModbusMasterModule.h"
 #include "modules/HttpModule.h"
-#include "runtime/ModbusPollingRuntime.h"
 #include "services/ControlService.h"
 #include "app/AppConfig.h"
 
@@ -35,6 +34,5 @@ private:
     std::unique_ptr<HttpModule> http_;
     WebSocketGateway ws_;
     ControlService control_;
-    ModbusPollingRuntime modbus_polling_;
     EventLoop loop_;
 };

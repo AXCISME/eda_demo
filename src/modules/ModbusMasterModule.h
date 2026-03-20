@@ -1,6 +1,12 @@
 #pragma once
+#include <condition_variable>
+#include <chrono>
+#include <deque>
 #include <memory>
+#include <mutex>
+#include <thread>
 #include <vector>
+#include <atomic>
 #include "core/EventBus.h"
 #include "core/Logger.h"
 #include "transport/modbus/IModbusMasterAdapter.h"
@@ -16,16 +22,8 @@ public:
 
     void init()
     {
-        bus_.subscribe(EventType::MODBUS_POLL, [this](const Event& e) {
-            on_poll(e);
-        });
-
         bus_.subscribe(EventType::CONTROL_COMMAND, [this](const Event& e) {
             on_control_command(e);
-        });
-
-        bus_.subscribe(EventType::MODBUS_WRITE_REQUEST, [this](const Event& e) {
-            on_write_request(e);
         });
     }
 
@@ -37,11 +35,35 @@ public:
             return false;
         }
 
-        return adapter_->connect();
+        if (!adapter_->connect())
+        {
+            return false;
+        }
+
+        bool expected = false;
+        if (!running_.compare_exchange_strong(expected, true))
+        {
+            return true;
+        }
+
+        worker_ = std::thread([this]() {
+            worker_loop();
+        });
+        return true;
     }
 
     void stop()
     {
+        bool expected = true;
+        if (running_.compare_exchange_strong(expected, false))
+        {
+            cv_.notify_all();
+            if (worker_.joinable())
+            {
+                worker_.join();
+            }
+        }
+
         if (adapter_)
         {
             adapter_->disconnect();
@@ -49,7 +71,21 @@ public:
     }
 
 private:
-    void on_poll(const Event&)
+    void worker_loop()
+    {
+        while (running_)
+        {
+            process_pending_writes();
+            poll_once();
+
+            std::unique_lock<std::mutex> lock(mutex_);
+            cv_.wait_for(lock, std::chrono::milliseconds(poll_interval_ms_), [this]() {
+                return !running_ || !pending_writes_.empty();
+            });
+        }
+    }
+
+    void poll_once()
     {
         if (!adapter_)
         {
@@ -89,12 +125,11 @@ private:
         if (auto cmd = std::get_if<ControlCommand>(&e.data))
         {
             Logger::info("[ModbusMasterModule] received control command: " + Logger::to_string(*cmd));
-
-            bus_.publish(Event(
-                EventType::MODBUS_WRITE_REQUEST,
-                "ModbusMasterModule",
-                *cmd
-            ));
+            {
+                std::lock_guard<std::mutex> lock(mutex_);
+                pending_writes_.push_back(*cmd);
+            }
+            cv_.notify_one();
         }
         else
         {
@@ -102,7 +137,7 @@ private:
         }
     }
 
-    void on_write_request(const Event& e)
+    void process_pending_writes()
     {
         if (!adapter_)
         {
@@ -110,25 +145,33 @@ private:
             return;
         }
 
-        auto cmd = std::get_if<ControlCommand>(&e.data);
-        if (!cmd)
+        std::deque<ControlCommand> writes;
         {
-            Logger::warn("[ModbusMasterModule] MODBUS_WRITE_REQUEST data type mismatch");
-            return;
+            std::lock_guard<std::mutex> lock(mutex_);
+            writes.swap(pending_writes_);
         }
 
-        if (!adapter_->write_single_register(
-                default_slave_id_,
-                cmd->addr,
-                static_cast<uint16_t>(cmd->value)))
+        for (const auto& cmd : writes)
         {
-            Logger::error("[ModbusMasterModule] write single register failed");
+            if (!adapter_->write_single_register(
+                    default_slave_id_,
+                    cmd.addr,
+                    static_cast<uint16_t>(cmd.value)))
+            {
+                Logger::error("[ModbusMasterModule] write single register failed");
+            }
         }
     }
 
 private:
     EventBus& bus_;
     std::unique_ptr<IModbusMasterAdapter> adapter_;
+    std::mutex mutex_;
+    std::condition_variable cv_;
+    std::deque<ControlCommand> pending_writes_;
+    std::atomic<bool> running_ {false};
+    std::thread worker_;
     int default_slave_id_ {1};
     int sample_base_addr_ {100};
+    int poll_interval_ms_ {1000};
 };
