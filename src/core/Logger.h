@@ -34,6 +34,21 @@ public:
         return oss.str();
     }
 
+    static std::string to_string(const PracticeCommand& c) {
+        return "PracticeCommand{action=" + c.action + "}";
+    }
+
+    static std::string to_string(const PracticeState& s) {
+        std::ostringstream oss;
+        oss << "PracticeState{status=" << s.status
+            << ", active=" << (s.active ? "true" : "false")
+            << ", sample_count=" << s.sample_count
+            << ", last_device_id=" << s.last_device_id
+            << ", last_temperature=" << s.last_temperature
+            << ", last_pressure=" << s.last_pressure << "}";
+        return oss.str();
+    }
+
     static std::string to_string(const WsClientInfo& c) {
         return "WsClientInfo{client_id=" + c.client_id + "}";
     }
@@ -51,6 +66,10 @@ public:
             else if constexpr (std::is_same_v<T, DeviceSample>)
                 return Logger::to_string(value);
             else if constexpr (std::is_same_v<T, ControlCommand>)
+                return Logger::to_string(value);
+            else if constexpr (std::is_same_v<T, PracticeCommand>)
+                return Logger::to_string(value);
+            else if constexpr (std::is_same_v<T, PracticeState>)
                 return Logger::to_string(value);
             else if constexpr (std::is_same_v<T, WsClientInfo>)
                 return Logger::to_string(value);

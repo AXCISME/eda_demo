@@ -23,6 +23,7 @@ inline int run_httpserver_demo()
 
     std::thread simulator([&app]() {
         app.simulate_ws_client_connect("client-001");
+        app.simulate_ws_text_message("client-001", "practice:start");
         std::this_thread::sleep_for(std::chrono::seconds(3));
         app.simulate_ws_client_message("client-001", 101, 0);
         std::this_thread::sleep_for(std::chrono::seconds(57));

@@ -13,6 +13,10 @@ public:
             on_data_updated(e);
         });
 
+        bus_.subscribe(EventType::PRACTICE_STATE_CHANGED, [this](const Event& e) {
+            on_practice_state_changed(e);
+        });
+
         bus_.subscribe(EventType::WS_MESSAGE_RECEIVED, [this](const Event& e) {
             on_ws_message(e);
         });
@@ -42,6 +46,18 @@ public:
 
         pending_command_.addr = addr;
         pending_command_.value = value;
+
+        bus_.publish(Event(
+            EventType::WS_MESSAGE_RECEIVED,
+            "WebSocketGateway",
+            msg
+        ));
+    }
+
+    void simulate_text_message(const std::string& client_id, std::string text) {
+        WsMessage msg;
+        msg.client_id = client_id;
+        msg.text = std::move(text);
 
         bus_.publish(Event(
             EventType::WS_MESSAGE_RECEIVED,
@@ -86,6 +102,17 @@ private:
                 pending_command_
             ));
         }
+        else if (msg->text == "practice:start" || msg->text == "practice:stop" || msg->text == "practice:reset")
+        {
+            PracticeCommand cmd;
+            cmd.action = msg->text.substr(std::string("practice:").size());
+
+            bus_.publish(Event(
+                EventType::PRACTICE_COMMAND,
+                "WebSocketGateway",
+                cmd
+            ));
+        }
     }
 
     void on_broadcast(const Event& e)
@@ -94,6 +121,22 @@ private:
         {
             Logger::info("[WebSocketGateway] broadcast to [" + client + "] => " + Logger::to_string(e.data));
         }
+    }
+
+    void on_practice_state_changed(const Event& e)
+    {
+        auto state = std::get_if<PracticeState>(&e.data);
+        if (!state)
+        {
+            Logger::warn("[WebSocketGateway] PRACTICE_STATE_CHANGED data type mismatch");
+            return;
+        }
+
+        bus_.publish(Event(
+            EventType::WS_BROADCAST,
+            "WebSocketGateway",
+            *state
+        ));
     }
 
 private:

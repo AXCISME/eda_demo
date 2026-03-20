@@ -38,6 +38,7 @@ Application::Application(
         modbus_(bus_, std::make_unique<FakeModbusMasterAdapter>()),
         ws_(bus_),
         control_(bus_),
+        practice_(bus_),
         loop_(bus_)
 {
     if (config_.enable_http)
@@ -68,6 +69,7 @@ void Application::init()
 
     ws_.init();
     control_.init();
+    practice_.init();
 
     if (http_)
     {
@@ -113,4 +115,9 @@ void Application::simulate_ws_client_connect(const std::string& client_id)
 void Application::simulate_ws_client_message(const std::string& client_id, int addr, int value)
 {
     ws_.simulate_client_message(client_id, addr, value);
+}
+
+void Application::simulate_ws_text_message(const std::string& client_id, const std::string& text)
+{
+    ws_.simulate_text_message(client_id, text);
 }

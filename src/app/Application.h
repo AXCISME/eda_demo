@@ -9,6 +9,7 @@
 #include "modules/ModbusMasterModule.h"
 #include "modules/HttpModule.h"
 #include "services/ControlService.h"
+#include "services/PracticeManager.h"
 #include "app/AppConfig.h"
 
 class Application
@@ -25,6 +26,7 @@ public:
     void stop();
     void simulate_ws_client_connect(const std::string& client_id);
     void simulate_ws_client_message(const std::string& client_id, int addr, int value);
+    void simulate_ws_text_message(const std::string& client_id, const std::string& text);
 
 private:
     AppConfig config_;
@@ -34,5 +36,6 @@ private:
     std::unique_ptr<HttpModule> http_;
     WebSocketGateway ws_;
     ControlService control_;
+    PracticeManager practice_;
     EventLoop loop_;
 };

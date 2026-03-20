@@ -19,6 +19,8 @@ enum class EventType {
     // 数据和控制相关事件
     DATA_UPDATED,                  // 数据更新
     CONTROL_COMMAND,               // 控制命令
+    PRACTICE_COMMAND,              // 实践管理命令
+    PRACTICE_STATE_CHANGED,        // 实践状态变化
 
     // 系统事件
     SHUTDOWN                       // 系统关闭
@@ -35,6 +37,8 @@ inline const char* to_string(EventType type) {
         case EventType::WS_BROADCAST: return "WS_BROADCAST";
         case EventType::DATA_UPDATED: return "DATA_UPDATED";
         case EventType::CONTROL_COMMAND: return "CONTROL_COMMAND";
+        case EventType::PRACTICE_COMMAND: return "PRACTICE_COMMAND";
+        case EventType::PRACTICE_STATE_CHANGED: return "PRACTICE_STATE_CHANGED";
         case EventType::SHUTDOWN: return "SHUTDOWN";
         default: return "NONE";
     }
