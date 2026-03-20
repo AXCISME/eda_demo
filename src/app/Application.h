@@ -1,13 +1,14 @@
 #pragma once
 #include <functional>
 #include <memory>
+#include <string>
 #include "core/EventBus.h"
 #include "core/EventLoop.h"
-#include "core/TimerManager.h"
+#include "interfaces/WebSocketGateway.h"
 #include "modules/http/IHttpRouteProvider.h"
 #include "modules/ModbusMasterModule.h"
 #include "modules/HttpModule.h"
-#include "modules/WebSocketModule.h"
+#include "runtime/ModbusPollingRuntime.h"
 #include "services/ControlService.h"
 #include "app/AppConfig.h"
 
@@ -22,15 +23,18 @@ public:
 
     void init();
     void run();
+    void stop();
+    void simulate_ws_client_connect(const std::string& client_id);
+    void simulate_ws_client_message(const std::string& client_id, int addr, int value);
 
 private:
     AppConfig config_;
     EventBus bus_;
-    TimerManager timer_manager_;
 
     ModbusMasterModule modbus_;
     std::unique_ptr<HttpModule> http_;
-    WebSocketModule ws_;
+    WebSocketGateway ws_;
     ControlService control_;
+    ModbusPollingRuntime modbus_polling_;
     EventLoop loop_;
 };

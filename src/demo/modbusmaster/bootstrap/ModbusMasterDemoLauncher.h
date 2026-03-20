@@ -1,4 +1,6 @@
 #pragma once
+#include <chrono>
+#include <thread>
 #include "app/Application.h"
 
 inline int run_modbusmaster_demo()
@@ -11,6 +13,21 @@ inline int run_modbusmaster_demo()
 
     Application app(config);
     app.init();
+
+    std::thread simulator([&app]() {
+        app.simulate_ws_client_connect("client-001");
+        std::this_thread::sleep_for(std::chrono::seconds(3));
+        app.simulate_ws_client_message("client-001", 101, 0);
+        std::this_thread::sleep_for(std::chrono::seconds(57));
+        app.stop();
+    });
+
     app.run();
+
+    if (simulator.joinable())
+    {
+        simulator.join();
+    }
+
     return 0;
 }

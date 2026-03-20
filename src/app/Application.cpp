@@ -1,6 +1,4 @@
 #include "app/Application.h"
-#include <thread>
-#include <chrono>
 #include <memory>
 
 #include "modules/http/BaseHttpRouteProvider.h"
@@ -40,6 +38,7 @@ Application::Application(
         modbus_(bus_, std::make_unique<FakeModbusMasterAdapter>()),
         ws_(bus_),
         control_(bus_),
+        modbus_polling_(bus_),
         loop_(bus_)
 {
     if (config_.enable_http)
@@ -81,35 +80,11 @@ void Application::init()
         
     }
 
-    timer_manager_.add_periodic_timer("modbus_poll_timer", 1000, [this]() {
-        bus_.publish(Event(
-            EventType::MODBUS_POLL,
-            "TimerManager"
-        ));
-    });
-
-    loop_.set_timer_manager(&timer_manager_);
+    modbus_polling_.start();
 }
 
 void Application::run()
 {
-    ws_.simulate_client_connect("client-001");
-
-    std::thread simulator([this]() {
-        std::this_thread::sleep_for(std::chrono::seconds(3));
-
-        ws_.simulate_client_message("client-001", 101, 0);
-
-        std::this_thread::sleep_for(std::chrono::seconds(57));
-
-        if (http_)
-        {
-            http_->stop();
-        }
-        modbus_.stop();
-        loop_.stop();
-    });
-
     if (http_)
     {
         Logger::info("[Application] HTTP server ready on :" + std::to_string(config_.http_port));
@@ -120,9 +95,26 @@ void Application::run()
     }
     
     loop_.run();
+}
 
-    if (simulator.joinable())
+void Application::stop()
+{
+    if (http_)
     {
-        simulator.join();
+        http_->stop();
     }
+
+    modbus_polling_.stop();
+    modbus_.stop();
+    loop_.stop();
+}
+
+void Application::simulate_ws_client_connect(const std::string& client_id)
+{
+    ws_.simulate_client_connect(client_id);
+}
+
+void Application::simulate_ws_client_message(const std::string& client_id, int addr, int value)
+{
+    ws_.simulate_client_message(client_id, addr, value);
 }
