@@ -36,8 +36,8 @@ private:
     AppConfig config_;
     EventBus bus_;
 
-    ModbusPollingRuntime modbus_runtime_;
-    ModbusMasterModule modbus_;
+    std::unique_ptr<ModbusPollingRuntime> modbus_runtime_;
+    std::unique_ptr<ModbusMasterModule> modbus_;
 
     std::unique_ptr<HttpModule> http_;
     WebSocketModule ws_;

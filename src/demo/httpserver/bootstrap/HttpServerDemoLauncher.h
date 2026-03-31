@@ -11,16 +11,21 @@
 inline int run_httpserver_demo()
 {
     AppConfig config;
-    config.enable_http = true;
-    config.http_backend = "mongoose";
-    config.http_host = "0.0.0.0";
-    config.http_port = 8080;
+    config.http.enabled = true;
+    config.http.backend = HttpBackendId::MONGOOSE;
+    config.http.host = "0.0.0.0";
+    config.http.port = 8080;
 
     auto host = ApplicationBootstrap::create(
         config,
         [](EventBus& bus) -> std::unique_ptr<IHttpRouteProvider> {
             return std::make_unique<DemoHttpRouteProvider>(bus);
         });
+    if (!host)
+    {
+        Logger::error("[HttpServerDemo] application bootstrap failed");
+        return 1;
+    }
 
     host->init();
     host->simulate_ws_client_connect("client-001");
@@ -33,7 +38,7 @@ inline int run_httpserver_demo()
         app->stop();
     });
 
-    Logger::info("[HttpServerDemo] HTTP server ready on :" + std::to_string(config.http_port));
+    Logger::info("[HttpServerDemo] HTTP server ready on :" + std::to_string(config.http.port));
     Logger::info("[HttpServerDemo] try:");
     Logger::info("[HttpServerDemo]   GET  /ping");
     Logger::info("[HttpServerDemo]   GET  /status");

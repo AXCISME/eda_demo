@@ -9,15 +9,22 @@ ApplicationHost::ApplicationHost(
     std::unique_ptr<IModbusMasterAdapter> modbus_adapter,
     HttpModuleFactory http_module_factory)
     : config_(std::move(config)),
-    modbus_runtime_(bus_,
-        std::move(modbus_adapter),
-        config_.modbus_poll_interval_ms),
-    modbus_(bus_, modbus_runtime_),
     ws_(bus_),
     control_(bus_),
     loop_(bus_)
 {
-    if (config_.enable_http && http_module_factory)
+    if (config_.modbus.enabled && modbus_adapter)
+    {
+        modbus_runtime_ = std::make_unique<ModbusPollingRuntime>(
+            bus_,
+            std::move(modbus_adapter),
+            config_.modbus.poll_interval_ms,
+            config_.modbus.slave_id,
+            config_.modbus.sample_base_addr);
+        modbus_ = std::make_unique<ModbusMasterModule>(bus_, *modbus_runtime_);
+    }
+
+    if (config_.http.enabled && http_module_factory)
     {
         http_ = http_module_factory(bus_);
     }
@@ -28,11 +35,19 @@ ApplicationHost::~ApplicationHost() {
 }
 
 void ApplicationHost::init() {
-    modbus_.init();
+    if (modbus_)
+    {
+        modbus_->init();
+    }
+    else if (config_.modbus.enabled)
+    {
+        Logger::error("[ApplicationHost] Modbus is enabled but module was not constructed");
+    }
+
     ws_.init();
     control_.init();
 
-    if (!modbus_.start())
+    if (modbus_ && !modbus_->start())
     {
         Logger::error("[ApplicationHost] failed to start Modbus runtime");
     }
@@ -40,7 +55,7 @@ void ApplicationHost::init() {
     if (http_)
     {
         http_->init();
-        if (!http_->start(config_.http_host, config_.http_port))
+        if (!http_->start(config_.http.host, config_.http.port))
         {
             Logger::error("[ApplicationHost] failed to start HTTP server");
         }
@@ -56,7 +71,10 @@ void ApplicationHost::stop() {
     {
         http_->stop();
     }
-    modbus_.stop();
+    if (modbus_)
+    {
+        modbus_->stop();
+    }
     loop_.stop();
 }
 

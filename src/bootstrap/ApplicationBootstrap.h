@@ -1,3 +1,11 @@
+/**
+ * ApplicationBootstrap.h
+ * 真正的总装入口
+ * 1. 接收AppConfig
+ * 2. 校验配置
+ * 3. 调用各协议的 assembly
+ * 4. 用 assembly 产物去构造 ApplicationHost
+ */
 #pragma once
 
 #include <functional>
