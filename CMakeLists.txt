@@ -9,14 +9,16 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_executable(eda_demo
     src/main.cpp
-    src/app/Application.cpp
+    src/application/host/ApplicationHost.cpp
+    src/bootstrap/ApplicationBootstrap.cpp
+    src/infrastructure/runtime/ModbusPollingRuntime.cpp
 )
 
 target_include_directories(eda_demo PRIVATE src)
 
 if (EDA_ENABLE_HTTP)
     target_sources(eda_demo PRIVATE
-        src/transport/http/MongooseHttpServerAdapter.cpp
+        src/infrastructure/transport/http/MongooseHttpServerAdapter.cpp
         third_party/mongoose/mongoose.c
     )
     target_include_directories(eda_demo PRIVATE third_party/mongoose)

@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
-#include "model/EventData.h"
-#include "transport/http/HttpRequest.h"
+#include "domain/model/EventData.h"
+#include "infrastructure/transport/http/HttpRequest.h"
 
 namespace demo_http
 {

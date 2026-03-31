@@ -1,7 +1,7 @@
 #pragma once
-#include "core/EventBus.h"
+#include "runtime/bus/EventBus.h"
 #include "demo/httpserver/parser/DemoControlCommandParser.h"
-#include "modules/http/BaseHttpRouteProvider.h"
+#include "interfaces/http/BaseHttpRouteProvider.h"
 
 class DemoHttpRouteProvider : public BaseHttpRouteProvider
 {
