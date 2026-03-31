@@ -6,22 +6,22 @@
 
 ApplicationHost::ApplicationHost(
     AppConfig config,
-    std::unique_ptr<IModbusMasterAdapter> modbus_adapter,
+    std::unique_ptr<IModbusMasterAdapter> modbus_master_adapter,
     HttpModuleFactory http_module_factory)
     : config_(std::move(config)),
     ws_(bus_),
     control_(bus_),
     loop_(bus_)
 {
-    if (config_.modbus.enabled && modbus_adapter)
+    if (config_.modbus_master.enabled && modbus_master_adapter)
     {
-        modbus_runtime_ = std::make_unique<ModbusPollingRuntime>(
+        modbus_master_runtime_ = std::make_unique<ModbusPollingRuntime>(
             bus_,
-            std::move(modbus_adapter),
-            config_.modbus.poll_interval_ms,
-            config_.modbus.slave_id,
-            config_.modbus.sample_base_addr);
-        modbus_ = std::make_unique<ModbusMasterModule>(bus_, *modbus_runtime_);
+            std::move(modbus_master_adapter),
+            config_.modbus_master.poll_interval_ms,
+            config_.modbus_master.slave_id,
+            config_.modbus_master.sample_base_addr);
+        modbus_master_ = std::make_unique<ModbusMasterModule>(bus_, *modbus_master_runtime_);
     }
 
     if (config_.http.enabled && http_module_factory)
@@ -35,21 +35,21 @@ ApplicationHost::~ApplicationHost() {
 }
 
 void ApplicationHost::init() {
-    if (modbus_)
+    if (modbus_master_)
     {
-        modbus_->init();
+        modbus_master_->init();
     }
-    else if (config_.modbus.enabled)
+    else if (config_.modbus_master.enabled)
     {
-        Logger::error("[ApplicationHost] Modbus is enabled but module was not constructed");
+        Logger::error("[ApplicationHost] Modbus Master is enabled but module was not constructed");
     }
 
     ws_.init();
     control_.init();
 
-    if (modbus_ && !modbus_->start())
+    if (modbus_master_ && !modbus_master_->start())
     {
-        Logger::error("[ApplicationHost] failed to start Modbus runtime");
+        Logger::error("[ApplicationHost] failed to start Modbus Master runtime");
     }
     
     if (http_)
@@ -71,9 +71,9 @@ void ApplicationHost::stop() {
     {
         http_->stop();
     }
-    if (modbus_)
+    if (modbus_master_)
     {
-        modbus_->stop();
+        modbus_master_->stop();
     }
     loop_.stop();
 }

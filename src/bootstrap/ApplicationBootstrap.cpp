@@ -7,7 +7,7 @@
 #include "bootstrap/AppConfigValidation.h"
 #include "bootstrap/assembly/AssemblyContext.h"
 #include "bootstrap/assembly/HttpAssembly.h"
-#include "bootstrap/assembly/ModbusAssembly.h"
+#include "bootstrap/assembly/ModbusMasterAssembly.h"
 #include "runtime/logging/Logger.h"
 
 namespace
@@ -34,9 +34,9 @@ std::unique_ptr<ApplicationHost> ApplicationBootstrap::create(
         return nullptr;
     }
 
-    if (!ModbusAssembly::install(context))
+    if (!ModbusMasterAssembly::install(context))
     {
-        Logger::error("[ApplicationBootstrap] failed to assemble Modbus stack");
+        Logger::error("[ApplicationBootstrap] failed to assemble Modbus Master stack");
         return nullptr;
     }
 
@@ -44,6 +44,6 @@ std::unique_ptr<ApplicationHost> ApplicationBootstrap::create(
 
     return std::make_unique<ApplicationHost>(
         std::move(context.config),
-        std::move(context.modbus_adapter),
+        std::move(context.modbus_master_adapter),
         std::move(context.http_module_factory));
 }

@@ -21,7 +21,7 @@ public:
 
     ApplicationHost(
         AppConfig config,
-        std::unique_ptr<IModbusMasterAdapter> modbus_adapter,
+        std::unique_ptr<IModbusMasterAdapter> modbus_master_adapter,
         HttpModuleFactory http_module_factory = {});
 
     ~ApplicationHost();
@@ -36,8 +36,8 @@ private:
     AppConfig config_;
     EventBus bus_;
 
-    std::unique_ptr<ModbusPollingRuntime> modbus_runtime_;
-    std::unique_ptr<ModbusMasterModule> modbus_;
+    std::unique_ptr<ModbusPollingRuntime> modbus_master_runtime_;
+    std::unique_ptr<ModbusMasterModule> modbus_master_;
 
     std::unique_ptr<HttpModule> http_;
     WebSocketModule ws_;

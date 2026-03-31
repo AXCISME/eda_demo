@@ -2,10 +2,12 @@ cmake_minimum_required(VERSION 3.10)
 project(eda_demo LANGUAGES C CXX)
 
 option(EDA_ENABLE_HTTP "Enable HTTP transport" ON)          # HTTP 能力开关
-option(EDA_ENABLE_MODBUS "Enable Modbus protocol" ON)       # MODBUS 能力开关
-option(EDA_HTTP_BACKEND_FAKE "Compile fake HTTP backend" ON)    # HTTP 底层实现 假服务开关
-option(EDA_HTTP_BACKEND_MONGOOSE "Compile mongoose HTTP backend" ON)    # HTTP 底层实现 mongoose开关
-option(EDA_MODBUS_BACKEND_FAKE "Compile fake Modbus backend" ON)    # MODBUS 底层实现 假服务开关
+option(EDA_ENABLE_MODBUS_MASTER "Enable Modbus Master protocol" ON)       # MODBUS_MASTER 能力开关
+option(EDA_HTTP_BACKEND_FAKE "Compile fake HTTP backend" ON)    # HTTP 底层实现 假服务装配开关
+option(EDA_HTTP_BACKEND_MONGOOSE "Compile mongoose HTTP backend" ON)    # HTTP 底层实现 mongoose装配开关
+option(EDA_MODBUS_MASTER_BACKEND_FAKE "Compile fake Modbus Master backend" ON)    # MODBUS_MASTER 底层实现 假服务装配开关
+option(EDA_MODBUS_MASTER_BACKEND_LIBMODBUS_TCP "Compile libmodbus Modbus Master TCP backend" OFF)  # MODBUS_MASTER_TCP 底层实现 libmodbus装配开关
+option(EDA_MODBUS_MASTER_BACKEND_LIBMODBUS_RTU "Compile libmodbus Modbus Master RTU backend" OFF)  # MODBUS_MASTER_RTU 底层实现 libmodbus装配开关
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
@@ -25,17 +27,36 @@ if (EDA_ENABLE_HTTP)
     endif()
 endif()
 
-if (NOT EDA_ENABLE_MODBUS)
-    if (EDA_MODBUS_BACKEND_FAKE)
+if (NOT EDA_ENABLE_MODBUS_MASTER)
+    if (EDA_MODBUS_MASTER_BACKEND_FAKE
+        OR EDA_MODBUS_MASTER_BACKEND_LIBMODBUS_TCP
+        OR EDA_MODBUS_MASTER_BACKEND_LIBMODBUS_RTU)
         message(FATAL_ERROR
-            "Modbus backends are enabled, but EDA_ENABLE_MODBUS=OFF")
+            "Modbus Master backends are enabled, but EDA_ENABLE_MODBUS_MASTER=OFF")
     endif()
 endif()
 
-if (EDA_ENABLE_MODBUS)
-    if (NOT EDA_MODBUS_BACKEND_FAKE)
+if (EDA_ENABLE_MODBUS_MASTER)
+    if (NOT EDA_MODBUS_MASTER_BACKEND_FAKE
+        AND NOT EDA_MODBUS_MASTER_BACKEND_LIBMODBUS_TCP
+        AND NOT EDA_MODBUS_MASTER_BACKEND_LIBMODBUS_RTU)
         message(FATAL_ERROR
-            "EDA_ENABLE_MODBUS=ON requires at least one Modbus backend")
+            "EDA_ENABLE_MODBUS_MASTER=ON requires at least one Modbus Master backend")
+    endif()
+endif()
+
+set(EDA_REQUIRE_LIBMODBUS OFF)
+if (EDA_ENABLE_MODBUS_MASTER AND (EDA_MODBUS_MASTER_BACKEND_LIBMODBUS_TCP OR EDA_MODBUS_MASTER_BACKEND_LIBMODBUS_RTU))
+    set(EDA_REQUIRE_LIBMODBUS ON)
+endif()
+
+if (EDA_REQUIRE_LIBMODBUS)
+    find_path(EDA_LIBMODBUS_INCLUDE_DIR NAMES modbus/modbus.h modbus.h)
+    find_library(EDA_LIBMODBUS_LIBRARY NAMES modbus)
+
+    if (NOT EDA_LIBMODBUS_INCLUDE_DIR OR NOT EDA_LIBMODBUS_LIBRARY)
+        message(FATAL_ERROR
+            "libmodbus backend requested, but libmodbus headers/library were not found")
     endif()
 endif()
 
@@ -50,9 +71,9 @@ add_executable(eda_demo
     src/bootstrap/AppConfigValidation.cpp
     src/bootstrap/ApplicationBootstrap.cpp
     src/bootstrap/assembly/HttpAssembly.cpp
-    src/bootstrap/assembly/ModbusAssembly.cpp
+    src/bootstrap/assembly/ModbusMasterAssembly.cpp
     src/bootstrap/factory/HttpBackendFactory.cpp
-    src/bootstrap/factory/ModbusBackendFactory.cpp
+    src/bootstrap/factory/ModbusMasterBackendFactory.cpp
     src/infrastructure/runtime/ModbusPollingRuntime.cpp
 )
 
@@ -65,6 +86,23 @@ if (EDA_ENABLE_HTTP AND EDA_HTTP_BACKEND_MONGOOSE)
         third_party/mongoose/mongoose.c
     )
     target_include_directories(eda_demo PRIVATE third_party/mongoose)
+endif()
+
+if (EDA_ENABLE_MODBUS_MASTER AND EDA_MODBUS_MASTER_BACKEND_LIBMODBUS_TCP)
+    target_sources(eda_demo PRIVATE
+        src/infrastructure/transport/modbus/LibmodbusMasterTcpAdapter.cpp
+    )
+endif()
+
+if (EDA_ENABLE_MODBUS_MASTER AND EDA_MODBUS_MASTER_BACKEND_LIBMODBUS_RTU)
+    target_sources(eda_demo PRIVATE
+        src/infrastructure/transport/modbus/LibmodbusMasterRtuAdapter.cpp
+    )
+endif()
+
+if (EDA_REQUIRE_LIBMODBUS)
+    target_include_directories(eda_demo PRIVATE ${EDA_LIBMODBUS_INCLUDE_DIR})
+    target_link_libraries(eda_demo PRIVATE ${EDA_LIBMODBUS_LIBRARY})
 endif()
 
 find_package(Threads REQUIRED)

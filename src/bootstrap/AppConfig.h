@@ -14,10 +14,12 @@ enum class HttpBackendId
     MONGOOSE
 };
 
-enum class ModbusBackendId
+enum class ModbusMasterBackendId
 {
     NONE = 0,
-    FAKE
+    FAKE,
+    LIBMODBUS_MASTER_TCP,
+    LIBMODBUS_MASTER_RTU
 };
 
 inline const char* to_string(HttpBackendId backend)
@@ -30,11 +32,13 @@ inline const char* to_string(HttpBackendId backend)
     }
 }
 
-inline const char* to_string(ModbusBackendId backend)
+inline const char* to_string(ModbusMasterBackendId backend)
 {
     switch (backend)
     {
-        case ModbusBackendId::FAKE: return "fake";
+        case ModbusMasterBackendId::FAKE: return "fake";
+        case ModbusMasterBackendId::LIBMODBUS_MASTER_TCP: return "libmodbus_master_tcp";
+        case ModbusMasterBackendId::LIBMODBUS_MASTER_RTU: return "libmodbus_master_rtu";
         default: return "none";
     }
 }
@@ -47,17 +51,24 @@ struct HttpConfig
     int port {8080};
 };
 
-struct ModbusConfig
+struct ModbusMasterConfig
 {
     bool enabled {true};
-    ModbusBackendId backend {ModbusBackendId::FAKE};
+    ModbusMasterBackendId backend {ModbusMasterBackendId::FAKE};
     int poll_interval_ms {1000};
     int slave_id {1};
     int sample_base_addr {100};
+    std::string tcp_host {"127.0.0.1"};
+    int tcp_port {502};
+    std::string serial_device {"/dev/ttyS1"};
+    int baudrate {9600};
+    char parity {'N'};
+    int data_bits {8};
+    int stop_bits {1};
 };
 
 struct AppConfig
 {
     HttpConfig http;
-    ModbusConfig modbus;
+    ModbusMasterConfig modbus_master;
 };

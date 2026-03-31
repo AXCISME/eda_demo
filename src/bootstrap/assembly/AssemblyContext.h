@@ -20,6 +20,6 @@ struct AssemblyContext
     }
 
     AppConfig config;
-    std::unique_ptr<IModbusMasterAdapter> modbus_adapter;
+    std::unique_ptr<IModbusMasterAdapter> modbus_master_adapter;
     ApplicationHost::HttpModuleFactory http_module_factory;
 };

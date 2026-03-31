@@ -13,8 +13,8 @@ inline int run_modbusmaster_demo()
     config.http.backend = HttpBackendId::FAKE;
     config.http.host = "0.0.0.0";
     config.http.port = 8080;
-    config.modbus.enabled = true;
-    config.modbus.backend = ModbusBackendId::FAKE;
+    config.modbus_master.enabled = true;
+    config.modbus_master.backend = ModbusMasterBackendId::FAKE;
 
     auto host = ApplicationBootstrap::create(config);
     if (!host)

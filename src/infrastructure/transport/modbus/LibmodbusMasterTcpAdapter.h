@@ -1,0 +1,43 @@
+#pragma once
+
+#include <string>
+#include <vector>
+
+#include "infrastructure/transport/modbus/IModbusMasterAdapter.h"
+
+#if __has_include(<modbus/modbus.h>)
+#include <modbus/modbus.h>
+#elif __has_include(<modbus.h>)
+#include <modbus.h>
+#else
+#error "libmodbus header not found"
+#endif
+
+class LibmodbusMasterTcpAdapter : public IModbusMasterAdapter
+{
+public:
+    LibmodbusMasterTcpAdapter(std::string host, int port);
+    ~LibmodbusMasterTcpAdapter() override;
+
+    bool connect() override;
+    void disconnect() override;
+
+    bool read_holding_registers(
+        int slave_id,
+        int addr,
+        int count,
+        std::vector<uint16_t>& out) override;
+
+    bool write_single_register(
+        int slave_id,
+        int addr,
+        uint16_t value) override;
+
+private:
+    bool ensure_slave(int slave_id);
+
+private:
+    std::string host_;
+    int port_ {502};
+    modbus_t* context_ {nullptr};
+};
