@@ -3,7 +3,9 @@
 #include <chrono>
 #include <memory>
 #include <thread>
+#include <vector>
 
+#include "application/services/ControlService.h"
 #include "bootstrap/ApplicationBootstrap.h"
 #include "demo/httpserver/routes/DemoHttpRouteProvider.h"
 #include "runtime/logging/Logger.h"
@@ -20,6 +22,12 @@ inline int run_httpserver_demo()
         config,
         [](EventBus& bus) -> std::unique_ptr<IHttpRouteProvider> {
             return std::make_unique<DemoHttpRouteProvider>(bus);
+        },
+        {},
+        [](EventBus& bus) -> std::vector<std::unique_ptr<IBusinessModule>> {
+            std::vector<std::unique_ptr<IBusinessModule>> modules;
+            modules.push_back(std::make_unique<ControlService>(bus));
+            return modules;
         });
     if (!host)
     {

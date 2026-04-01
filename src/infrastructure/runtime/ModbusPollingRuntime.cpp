@@ -187,11 +187,7 @@ bool ModbusPollingRuntime::perform_poll() {
 
     Logger::info("[ModbusPollingRuntime] sample read: " + Logger::to_string(sample));
 
-    bus_.publish(Event(
-        EventType::MODBUS_SAMPLE_RECEIVED,
-        "ModbusPollingRuntime",
-        sample
-    ));
+    bus_.publish(FrameworkEvents::MODBUS_SAMPLE_RECEIVED, "ModbusPollingRuntime", sample);
 
     return true;
 }

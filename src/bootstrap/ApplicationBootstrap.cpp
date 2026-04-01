@@ -23,7 +23,9 @@ void log_validation_errors(const std::vector<std::string>& errors)
 
 std::unique_ptr<ApplicationHost> ApplicationBootstrap::create(
     AppConfig config,
-    HttpRouteProviderFactory http_route_provider_factory)
+    HttpRouteProviderFactory http_route_provider_factory,
+    TimerManagerFactory timer_manager_factory,
+    BusinessModuleFactory business_module_factory)
 {
     AssemblyContext context(std::move(config));
 
@@ -45,5 +47,7 @@ std::unique_ptr<ApplicationHost> ApplicationBootstrap::create(
     return std::make_unique<ApplicationHost>(
         std::move(context.config),
         std::move(context.modbus_master_adapter),
-        std::move(context.http_module_factory));
+        std::move(context.http_module_factory),
+        std::move(timer_manager_factory),
+        std::move(business_module_factory));
 }

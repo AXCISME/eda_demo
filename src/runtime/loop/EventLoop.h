@@ -28,7 +28,7 @@ public:
             Event event;
             if (bus_.wait_and_get(event, 50))
             {
-                if (event.type == EventType::SHUTDOWN)
+                if (event.type == FrameworkEvents::SHUTDOWN)
                 {
                     Logger::warn("[EventLoop] shutdown event received");
                     running_ = false;
@@ -42,10 +42,7 @@ public:
     }
 
     void stop() {
-        bus_.publish(Event(
-            EventType::SHUTDOWN,
-            "EventLoop"
-        ));
+        bus_.publish(FrameworkEvents::SHUTDOWN, "EventLoop");
     }
 private:
     EventBus& bus_;

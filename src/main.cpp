@@ -2,6 +2,7 @@
 
 #include "demo/httpserver/bootstrap/HttpServerDemoLauncher.h"
 #include "demo/modbusmaster/bootstrap/ModbusMasterDemoLauncher.h"
+#include "demo/timer_test/TimerDemoLauncher.h"
 
 int main(int argc, char** argv)
 {
@@ -17,6 +18,11 @@ int main(int argc, char** argv)
         if (mode == "http")
         {
             return run_httpserver_demo();
+        }
+
+        if (mode == "timer")
+        {
+            return run_timer_demo();
         }
     }
 

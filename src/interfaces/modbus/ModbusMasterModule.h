@@ -1,8 +1,9 @@
 #pragma once
 
+#include "application/events/ApplicationEvents.h"
+#include "infrastructure/runtime/ModbusPollingRuntime.h"
 #include "runtime/bus/EventBus.h"
 #include "runtime/logging/Logger.h"
-#include "infrastructure/runtime/ModbusPollingRuntime.h"
 
 class ModbusMasterModule
 {
@@ -15,8 +16,8 @@ public:
 
     void init()
     {
-        bus_.subscribe(EventType::CONTROL_COMMAND, [this](const Event& e) {
-            on_control_command(e);
+        bus_.subscribe(ApplicationEvents::CONTROL_COMMAND, [this](const ControlCommand& cmd) {
+            on_control_command(cmd);
         });
     }
 
@@ -30,17 +31,10 @@ public:
         runtime_.stop();
     }
 private:
-    void on_control_command(const Event& e)
+    void on_control_command(const ControlCommand& cmd)
     {
-        auto cmd = std::get_if<ControlCommand>(&e.data);
-        if (!cmd)
-        {
-            Logger::warn("[ModbusMasterModule] CONTROL_COMMAND data type mismatch");
-            return;
-        }
-
-        Logger::info("[ModbusMasterModule] forward control command: " + Logger::to_string(*cmd));
-        runtime_.submit_write(*cmd);
+        Logger::info("[ModbusMasterModule] forward control command: " + Logger::to_string(cmd));
+        runtime_.submit_write(cmd);
     }
     
 private:

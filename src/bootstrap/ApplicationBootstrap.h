@@ -19,9 +19,13 @@
 class ApplicationBootstrap {
 public:
     using HttpRouteProviderFactory = std::function<std::unique_ptr<IHttpRouteProvider>(EventBus&)>;
+    using TimerManagerFactory = ApplicationHost::TimerManagerFactory;
+    using BusinessModuleFactory = ApplicationHost::BusinessModuleFactory;
 
     static std::unique_ptr<ApplicationHost> create(
         AppConfig config,
-        HttpRouteProviderFactory http_route_provider_factory = {}
+        HttpRouteProviderFactory http_route_provider_factory = {},
+        TimerManagerFactory timer_manager_factory = {},
+        BusinessModuleFactory business_module_factory = {}
     );
 };

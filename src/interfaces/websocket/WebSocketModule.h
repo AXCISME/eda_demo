@@ -1,6 +1,8 @@
 #pragma once
 #include <string>
 #include <vector>
+
+#include "application/events/ApplicationEvents.h"
 #include "runtime/bus/EventBus.h"
 #include "runtime/logging/Logger.h"
 
@@ -9,16 +11,16 @@ public:
     explicit WebSocketModule(EventBus& bus) : bus_(bus) {}
 
     void init() {
-        bus_.subscribe(EventType::TELEMETRY_UPDATED, [this](const Event& e) {
-            on_telemetry_updated(e);
+        bus_.subscribe(ApplicationEvents::TELEMETRY_UPDATED, [this](const DeviceSample& sample) {
+            on_telemetry_updated(sample);
         });
 
-        bus_.subscribe(EventType::WS_MESSAGE_RECEIVED, [this](const Event& e) {
-            on_ws_message(e);
+        bus_.subscribe(FrameworkEvents::WS_MESSAGE_RECEIVED, [this](const WsMessage& msg) {
+            on_ws_message(msg);
         });
 
-        bus_.subscribe(EventType::WS_BROADCAST, [this](const Event& e) {
-            on_broadcast(e);
+        bus_.subscribe(FrameworkEvents::WS_BROADCAST, [this](const DeviceSample& sample) {
+            on_broadcast(sample);
         });
     }
 
@@ -28,11 +30,7 @@ public:
         WsClientInfo info;
         info.client_id = client_id;
 
-        bus_.publish(Event(
-            EventType::WS_CLIENT_CONNECTED,
-            "WebSocketModule",
-            info
-        ));
+        bus_.publish(FrameworkEvents::WS_CLIENT_CONNECTED, "WebSocketModule", info);
     }
 
     void simulate_client_message(const std::string& client_id, int addr, int value) {
@@ -43,56 +41,30 @@ public:
         pending_command_.addr = addr;
         pending_command_.value = value;
 
-        bus_.publish(Event(
-            EventType::WS_MESSAGE_RECEIVED,
-            "WebSocketModule",
-            msg
-        ));
+        bus_.publish(FrameworkEvents::WS_MESSAGE_RECEIVED, "WebSocketModule", msg);
     }
 
 private:
-    void on_telemetry_updated(const Event& e)
+    void on_telemetry_updated(const DeviceSample& sample)
     {
-        if (auto sample = std::get_if<DeviceSample>(&e.data))
+        bus_.publish(FrameworkEvents::WS_BROADCAST, "WebSocketModule", sample);
+    }
+
+    void on_ws_message(const WsMessage& msg)
+    {
+        Logger::info("[WebSocketModule] message received: " + Logger::to_string(msg));
+
+        if (msg.text == "control")
         {
-            bus_.publish(Event(
-                EventType::WS_BROADCAST,
-                "WebSocketModule",
-                *sample
-            ));
-        }
-        else
-        {
-            Logger::warn("[WebSocketModule] DATA_UPDATED data type mismatch");
+            bus_.publish(ApplicationEvents::CONTROL_COMMAND, "WebSocketModule", pending_command_);
         }
     }
 
-    void on_ws_message(const Event& e)
-    {
-        auto msg = std::get_if<WsMessage>(&e.data);
-        if (!msg)
-        {
-            Logger::warn("[WebSocketModule] WS_MESSAGE_RECEIVED data type mismatch");
-            return;
-        }
-
-        Logger::info("[WebSocketModule] message received: " + Logger::to_string(*msg));
-
-        if (msg->text == "control")
-        {
-            bus_.publish(Event(
-                EventType::CONTROL_COMMAND,
-                "WebSocketModule",
-                pending_command_
-            ));
-        }
-    }
-
-    void on_broadcast(const Event& e)
+    void on_broadcast(const DeviceSample& sample)
     {
         for (const auto& client : clients_)
         {
-            Logger::info("[WebSocketModule] broadcast to [" + client + "] => " + Logger::to_string(e.data));
+            Logger::info("[WebSocketModule] broadcast to [" + client + "] => " + Logger::to_string(sample));
         }
     }
 private:

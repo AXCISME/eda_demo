@@ -6,8 +6,8 @@ option(EDA_ENABLE_MODBUS_MASTER "Enable Modbus Master protocol" ON)       # MODB
 option(EDA_HTTP_BACKEND_FAKE "Compile fake HTTP backend" ON)    # HTTP 底层实现 假服务装配开关
 option(EDA_HTTP_BACKEND_MONGOOSE "Compile mongoose HTTP backend" ON)    # HTTP 底层实现 mongoose装配开关
 option(EDA_MODBUS_MASTER_BACKEND_FAKE "Compile fake Modbus Master backend" ON)    # MODBUS_MASTER 底层实现 假服务装配开关
-option(EDA_MODBUS_MASTER_BACKEND_LIBMODBUS_TCP "Compile libmodbus Modbus Master TCP backend" OFF)  # MODBUS_MASTER_TCP 底层实现 libmodbus装配开关
-option(EDA_MODBUS_MASTER_BACKEND_LIBMODBUS_RTU "Compile libmodbus Modbus Master RTU backend" OFF)  # MODBUS_MASTER_RTU 底层实现 libmodbus装配开关
+option(EDA_MODBUS_MASTER_BACKEND_LIBMODBUS_TCP "Compile libmodbus Modbus Master TCP backend" ON)  # MODBUS_MASTER_TCP 底层实现 libmodbus装配开关
+option(EDA_MODBUS_MASTER_BACKEND_LIBMODBUS_RTU "Compile libmodbus Modbus Master RTU backend" ON)  # MODBUS_MASTER_RTU 底层实现 libmodbus装配开关
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
@@ -50,9 +50,25 @@ if (EDA_ENABLE_MODBUS_MASTER AND (EDA_MODBUS_MASTER_BACKEND_LIBMODBUS_TCP OR EDA
     set(EDA_REQUIRE_LIBMODBUS ON)
 endif()
 
+set(EDA_VENDORED_LIBMODBUS_INCLUDE_DIR
+    "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libmodbus/include")
+set(EDA_VENDORED_LIBMODBUS_LIBRARY
+    "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libmodbus/lib/libmodbus.a")
+
 if (EDA_REQUIRE_LIBMODBUS)
-    find_path(EDA_LIBMODBUS_INCLUDE_DIR NAMES modbus/modbus.h modbus.h)
-    find_library(EDA_LIBMODBUS_LIBRARY NAMES modbus)
+    if (EXISTS "${EDA_VENDORED_LIBMODBUS_INCLUDE_DIR}/modbus/modbus.h"
+        AND EXISTS "${EDA_VENDORED_LIBMODBUS_LIBRARY}")
+        set(EDA_LIBMODBUS_INCLUDE_DIR "${EDA_VENDORED_LIBMODBUS_INCLUDE_DIR}")
+        set(EDA_LIBMODBUS_LIBRARY "${EDA_VENDORED_LIBMODBUS_LIBRARY}")
+        message(STATUS "Using vendored libmodbus from third_party/libmodbus")
+    else()
+        find_path(EDA_LIBMODBUS_INCLUDE_DIR NAMES modbus/modbus.h modbus.h)
+        find_library(EDA_LIBMODBUS_LIBRARY NAMES modbus)
+
+        if (EDA_LIBMODBUS_INCLUDE_DIR AND EDA_LIBMODBUS_LIBRARY)
+            message(STATUS "Using system libmodbus")
+        endif()
+    endif()
 
     if (NOT EDA_LIBMODBUS_INCLUDE_DIR OR NOT EDA_LIBMODBUS_LIBRARY)
         message(FATAL_ERROR
@@ -74,6 +90,7 @@ add_executable(eda_demo
     src/bootstrap/assembly/ModbusMasterAssembly.cpp
     src/bootstrap/factory/HttpBackendFactory.cpp
     src/bootstrap/factory/ModbusMasterBackendFactory.cpp
+    src/demo/timer_test/TimerDemoLauncher.cpp
     src/infrastructure/runtime/ModbusPollingRuntime.cpp
 )
 
@@ -106,4 +123,4 @@ if (EDA_REQUIRE_LIBMODBUS)
 endif()
 
 find_package(Threads REQUIRED)
-target_link_libraries(eda_demo Threads::Threads)
+target_link_libraries(eda_demo PRIVATE Threads::Threads)

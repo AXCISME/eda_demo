@@ -2,7 +2,9 @@
 
 #include <chrono>
 #include <thread>
+#include <vector>
 
+#include "application/services/ControlService.h"
 #include "bootstrap/ApplicationBootstrap.h"
 #include "runtime/logging/Logger.h"
 
@@ -16,7 +18,15 @@ inline int run_modbusmaster_demo()
     config.modbus_master.enabled = true;
     config.modbus_master.backend = ModbusMasterBackendId::FAKE;
 
-    auto host = ApplicationBootstrap::create(config);
+    auto host = ApplicationBootstrap::create(
+        config,
+        {},
+        {},
+        [](EventBus& bus) -> std::vector<std::unique_ptr<IBusinessModule>> {
+            std::vector<std::unique_ptr<IBusinessModule>> modules;
+            modules.push_back(std::make_unique<ControlService>(bus));
+            return modules;
+        });
     if (!host)
     {
         Logger::error("[ModbusMasterDemo] application bootstrap failed");

@@ -1,8 +1,8 @@
 #pragma once
 #include <iostream>
-#include <string>
 #include <sstream>
-#include <type_traits>
+#include <string>
+
 #include "domain/model/EventData.h"
 
 class Logger {
@@ -43,21 +43,6 @@ public:
     }
 
     static std::string to_string(const EventData& data) {
-        return std::visit([](const auto& value) ->std::string {
-            using T = std::decay_t<decltype(value)>;
-
-            if constexpr (std::is_same_v<T, std::monostate>)
-                return "{}";
-            else if constexpr (std::is_same_v<T, DeviceSample>)
-                return Logger::to_string(value);
-            else if constexpr (std::is_same_v<T, ControlCommand>)
-                return Logger::to_string(value);
-            else if constexpr (std::is_same_v<T, WsClientInfo>)
-                return Logger::to_string(value);
-            else if constexpr (std::is_same_v<T, WsMessage>)
-                return Logger::to_string(value);
-            else
-                return "{unknown}";
-        }, data);
+        return format_event_payload(data);
     }
 };

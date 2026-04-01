@@ -7,10 +7,11 @@
 ApplicationHost::ApplicationHost(
     AppConfig config,
     std::unique_ptr<IModbusMasterAdapter> modbus_master_adapter,
-    HttpModuleFactory http_module_factory)
+    HttpModuleFactory http_module_factory,
+    TimerManagerFactory timer_manager_factory,
+    BusinessModuleFactory business_module_factory)
     : config_(std::move(config)),
     ws_(bus_),
-    control_(bus_),
     loop_(bus_)
 {
     if (config_.modbus_master.enabled && modbus_master_adapter)
@@ -27,6 +28,17 @@ ApplicationHost::ApplicationHost(
     if (config_.http.enabled && http_module_factory)
     {
         http_ = http_module_factory(bus_);
+    }
+
+    if (timer_manager_factory)
+    {
+        timer_manager_ = timer_manager_factory(bus_);
+        loop_.set_timer_manager(timer_manager_.get());
+    }
+
+    if (business_module_factory)
+    {
+        business_modules_ = business_module_factory(bus_);
     }
 }
 
@@ -45,7 +57,11 @@ void ApplicationHost::init() {
     }
 
     ws_.init();
-    control_.init();
+
+    for (auto& module : business_modules_)
+    {
+        module->install();
+    }
 
     if (modbus_master_ && !modbus_master_->start())
     {

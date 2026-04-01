@@ -1,60 +1,41 @@
 #pragma once
 
-#include "runtime/bus/EventBus.h"
+#include "application/events/ApplicationEvents.h"
+#include "application/modules/IBusinessModule.h"
 #include "runtime/logging/Logger.h"
 
-class ControlService
+class ControlService : public IBusinessModule
 {
 public:
     explicit ControlService(EventBus& bus)
-        : bus_(bus)
+        : IBusinessModule(bus)
     {
     }
 
-    void init()
+    void install() override
     {
-        bus_.subscribe(EventType::MODBUS_SAMPLE_RECEIVED, [this](const Event& e) {
-            on_modbus_sample_received(e);
+        bus_.subscribe(FrameworkEvents::MODBUS_SAMPLE_RECEIVED, [this](const DeviceSample& sample) {
+            on_modbus_sample_received(sample);
         });
 
-        bus_.subscribe(EventType::WS_CLIENT_CONNECTED, [this](const Event& e) {
-            on_ws_client_connected(e);
+        bus_.subscribe(FrameworkEvents::WS_CLIENT_CONNECTED, [this](const WsClientInfo& info) {
+            on_ws_client_connected(info);
         });
     }
 
 private:
-    void on_modbus_sample_received(const Event& e)
+    void on_modbus_sample_received(const DeviceSample& sample)
     {
-        if (auto sample = std::get_if<DeviceSample>(&e.data))
-        {
-            Logger::info(
-                "[ControlService] processing telemetry sample: "
-                + Logger::to_string(*sample));
+        Logger::info(
+            "[ControlService] processing telemetry sample: "
+            + Logger::to_string(sample));
 
-            bus_.publish(Event(
-                EventType::TELEMETRY_UPDATED,
-                "ControlService",
-                *sample
-            ));
-        }
-        else
-        {
-            Logger::warn("[ControlService] MODBUS_SAMPLE_RECEIVED data type mismatch");
-        }
+        bus_.publish(ApplicationEvents::TELEMETRY_UPDATED, "ControlService", sample);
     }
 
-    void on_ws_client_connected(const Event& e)
+    void on_ws_client_connected(const WsClientInfo& info)
     {
-        if (auto info = std::get_if<WsClientInfo>(&e.data))
-        {
-            Logger::info("[ControlService] WS client connected: " + Logger::to_string(*info));
-        }
-        else
-        {
-            Logger::warn("[ControlService] WS_CLIENT_CONNECTED data type mismatch");
-        }
+        Logger::info("[ControlService] WS client connected: " + Logger::to_string(info));
     }
 
-private:
-    EventBus& bus_;
 };
