@@ -93,31 +93,32 @@ if (EDA_REQUIRE_LIBMODBUS)
 endif()
 
 configure_file(
-    src/bootstrap/BuildFeatures.h.in
+    core/bootstrap/BuildFeatures.h.in
     ${CMAKE_CURRENT_BINARY_DIR}/generated/bootstrap/BuildFeatures.h
 )
 
 add_executable(eda_demo
-    src/main.cpp
-    src/application/host/ApplicationHost.cpp
-    src/bootstrap/AppConfigValidation.cpp
-    src/bootstrap/ApplicationBootstrap.cpp
-    src/bootstrap/assembly/HttpAssembly.cpp
-    src/bootstrap/assembly/HttpClientAssembly.cpp
-    src/bootstrap/assembly/ModbusMasterAssembly.cpp
-    src/bootstrap/factory/HttpBackendFactory.cpp
-    src/bootstrap/factory/HttpClientBackendFactory.cpp
-    src/bootstrap/factory/ModbusMasterBackendFactory.cpp
-    src/demo/timer_test/TimerDemoLauncher.cpp
-    src/infrastructure/runtime/ModbusPollingRuntime.cpp
+    main.cpp
+    core/application/host/ApplicationHost.cpp
+    core/bootstrap/AppConfigValidation.cpp
+    core/bootstrap/ApplicationBootstrap.cpp
+    core/bootstrap/assembly/HttpAssembly.cpp
+    core/bootstrap/assembly/HttpClientAssembly.cpp
+    core/bootstrap/assembly/ModbusMasterAssembly.cpp
+    core/bootstrap/factory/HttpBackendFactory.cpp
+    core/bootstrap/factory/HttpClientBackendFactory.cpp
+    core/bootstrap/factory/ModbusMasterBackendFactory.cpp
+    demo/timer_test/TimerDemoLauncher.cpp
+    core/infrastructure/runtime/ModbusPollingRuntime.cpp
 )
 
-target_include_directories(eda_demo PRIVATE src)
+target_include_directories(eda_demo PRIVATE core)
+target_include_directories(eda_demo PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(eda_demo PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/generated)
 
 if (EDA_ENABLE_HTTP AND EDA_HTTP_BACKEND_MONGOOSE)
     target_sources(eda_demo PRIVATE
-        src/infrastructure/transport/http/MongooseHttpServerAdapter.cpp
+        core/infrastructure/transport/http/MongooseHttpServerAdapter.cpp
         third_party/mongoose/mongoose.c
     )
     target_include_directories(eda_demo PRIVATE third_party/mongoose)
@@ -125,13 +126,13 @@ endif()
 
 if (EDA_ENABLE_MODBUS_MASTER AND EDA_MODBUS_MASTER_BACKEND_LIBMODBUS_TCP)
     target_sources(eda_demo PRIVATE
-        src/infrastructure/transport/modbus/LibmodbusMasterTcpAdapter.cpp
+        core/infrastructure/transport/modbus/LibmodbusMasterTcpAdapter.cpp
     )
 endif()
 
 if (EDA_ENABLE_MODBUS_MASTER AND EDA_MODBUS_MASTER_BACKEND_LIBMODBUS_RTU)
     target_sources(eda_demo PRIVATE
-        src/infrastructure/transport/modbus/LibmodbusMasterRtuAdapter.cpp
+        core/infrastructure/transport/modbus/LibmodbusMasterRtuAdapter.cpp
     )
 endif()
 
