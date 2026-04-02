@@ -6,9 +6,11 @@
 #pragma once
 
 #cmakedefine01 EDA_ENABLE_HTTP
+#cmakedefine01 EDA_ENABLE_HTTP_CLIENT
 #cmakedefine01 EDA_ENABLE_MODBUS_MASTER
 #cmakedefine01 EDA_HTTP_BACKEND_FAKE
 #cmakedefine01 EDA_HTTP_BACKEND_MONGOOSE
+#cmakedefine01 EDA_HTTP_CLIENT_BACKEND_FAKE
 #cmakedefine01 EDA_MODBUS_MASTER_BACKEND_FAKE
 #cmakedefine01 EDA_MODBUS_MASTER_BACKEND_LIBMODBUS_TCP
 #cmakedefine01 EDA_MODBUS_MASTER_BACKEND_LIBMODBUS_RTU
@@ -16,10 +18,12 @@
 namespace build_features
 {
 inline constexpr bool http = EDA_ENABLE_HTTP;
+inline constexpr bool http_client = EDA_ENABLE_HTTP_CLIENT;
 inline constexpr bool modbus_master = EDA_ENABLE_MODBUS_MASTER;
 
 inline constexpr bool http_fake = EDA_HTTP_BACKEND_FAKE;
 inline constexpr bool http_mongoose = EDA_HTTP_BACKEND_MONGOOSE;
+inline constexpr bool http_client_fake = EDA_HTTP_CLIENT_BACKEND_FAKE;
 
 inline constexpr bool modbus_master_fake = EDA_MODBUS_MASTER_BACKEND_FAKE;
 inline constexpr bool modbus_master_libmodbus_tcp = EDA_MODBUS_MASTER_BACKEND_LIBMODBUS_TCP;

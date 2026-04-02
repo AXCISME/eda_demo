@@ -3,6 +3,7 @@
 #include <any>
 #include <string>
 #include <typeinfo>
+#include <unordered_map>
 
 struct DeviceSample
 {
@@ -26,6 +27,30 @@ struct WsMessage
 {
     std::string client_id;
     std::string text;
+};
+
+struct HttpClientRequest
+{
+    std::string request_id;
+    std::string method;
+    std::string url;
+    std::string body;
+    std::unordered_map<std::string, std::string> headers;
+    int timeout_ms {5000};
+};
+
+struct HttpClientResponse
+{
+    std::string request_id;
+    int status {200};
+    std::string body;
+    std::unordered_map<std::string, std::string> headers;
+};
+
+struct HttpClientFailure
+{
+    std::string request_id;
+    std::string error_message;
 };
 
 using EventData = std::any;
@@ -80,6 +105,42 @@ struct EventPayloadFormatter<WsMessage>
     }
 };
 
+template<>
+struct EventPayloadFormatter<HttpClientRequest>
+{
+    static std::string to_string(const HttpClientRequest& request)
+    {
+        return "HttpClientRequest{request_id=" + request.request_id
+            + ", method=" + request.method
+            + ", url=" + request.url
+            + ", timeout_ms=" + std::to_string(request.timeout_ms)
+            + "}";
+    }
+};
+
+template<>
+struct EventPayloadFormatter<HttpClientResponse>
+{
+    static std::string to_string(const HttpClientResponse& response)
+    {
+        return "HttpClientResponse{request_id=" + response.request_id
+            + ", status=" + std::to_string(response.status)
+            + ", body_size=" + std::to_string(response.body.size())
+            + "}";
+    }
+};
+
+template<>
+struct EventPayloadFormatter<HttpClientFailure>
+{
+    static std::string to_string(const HttpClientFailure& failure)
+    {
+        return "HttpClientFailure{request_id=" + failure.request_id
+            + ", error_message=" + failure.error_message
+            + "}";
+    }
+};
+
 template<typename Payload>
 inline std::string format_event_payload(const Payload& payload)
 {
@@ -109,6 +170,21 @@ inline std::string format_event_payload(const EventData& data)
     }
 
     if (const auto* value = std::any_cast<WsMessage>(&data))
+    {
+        return format_event_payload(*value);
+    }
+
+    if (const auto* value = std::any_cast<HttpClientRequest>(&data))
+    {
+        return format_event_payload(*value);
+    }
+
+    if (const auto* value = std::any_cast<HttpClientResponse>(&data))
+    {
+        return format_event_payload(*value);
+    }
+
+    if (const auto* value = std::any_cast<HttpClientFailure>(&data))
     {
         return format_event_payload(*value);
     }

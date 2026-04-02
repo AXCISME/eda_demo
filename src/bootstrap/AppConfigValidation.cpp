@@ -43,6 +43,30 @@ std::vector<std::string> validate_app_config(const AppConfig& config)
         }
     }
 
+    if (config.http_client.enabled)
+    {
+        if (!build_features::http_client)
+        {
+            errors.push_back("HTTP client is enabled in config but was not compiled into this build");
+        }
+        else
+        {
+            switch (config.http_client.backend)
+            {
+                case HttpClientBackendId::FAKE:
+                    if (!build_features::http_client_fake)
+                    {
+                        errors.push_back("HTTP client fake backend selected but not compiled into this build");
+                    }
+                    break;
+
+                default:
+                    errors.push_back("HTTP client is enabled but backend is NONE");
+                    break;
+            }
+        }
+    }
+
     if (config.modbus_master.enabled)
     {
         if (!build_features::modbus_master)

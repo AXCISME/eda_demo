@@ -14,6 +14,12 @@ enum class HttpBackendId
     MONGOOSE
 };
 
+enum class HttpClientBackendId
+{
+    NONE = 0,
+    FAKE
+};
+
 enum class ModbusMasterBackendId
 {
     NONE = 0,
@@ -28,6 +34,15 @@ inline const char* to_string(HttpBackendId backend)
     {
         case HttpBackendId::FAKE: return "fake";
         case HttpBackendId::MONGOOSE: return "mongoose";
+        default: return "none";
+    }
+}
+
+inline const char* to_string(HttpClientBackendId backend)
+{
+    switch (backend)
+    {
+        case HttpClientBackendId::FAKE: return "fake";
         default: return "none";
     }
 }
@@ -51,6 +66,12 @@ struct HttpConfig
     int port {8080};
 };
 
+struct HttpClientConfig
+{
+    bool enabled {false};
+    HttpClientBackendId backend {HttpClientBackendId::FAKE};
+};
+
 struct ModbusMasterConfig
 {
     bool enabled {true};
@@ -70,5 +91,6 @@ struct ModbusMasterConfig
 struct AppConfig
 {
     HttpConfig http;
+    HttpClientConfig http_client;
     ModbusMasterConfig modbus_master;
 };

@@ -7,6 +7,7 @@
 #include "bootstrap/AppConfigValidation.h"
 #include "bootstrap/assembly/AssemblyContext.h"
 #include "bootstrap/assembly/HttpAssembly.h"
+#include "bootstrap/assembly/HttpClientAssembly.h"
 #include "bootstrap/assembly/ModbusMasterAssembly.h"
 #include "runtime/logging/Logger.h"
 
@@ -43,11 +44,13 @@ std::unique_ptr<ApplicationHost> ApplicationBootstrap::create(
     }
 
     HttpAssembly::install(context, std::move(http_route_provider_factory));
+    HttpClientAssembly::install(context);
 
     return std::make_unique<ApplicationHost>(
         std::move(context.config),
         std::move(context.modbus_master_adapter),
         std::move(context.http_module_factory),
+        std::move(context.http_client_module_factory),
         std::move(timer_manager_factory),
         std::move(business_module_factory));
 }

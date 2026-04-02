@@ -2,9 +2,11 @@ cmake_minimum_required(VERSION 3.10)
 project(eda_demo LANGUAGES C CXX)
 
 option(EDA_ENABLE_HTTP "Enable HTTP transport" ON)          # HTTP 能力开关
+option(EDA_ENABLE_HTTP_CLIENT "Enable HTTP client transport" ON)          # HTTP client 能力开关
 option(EDA_ENABLE_MODBUS_MASTER "Enable Modbus Master protocol" ON)       # MODBUS_MASTER 能力开关
 option(EDA_HTTP_BACKEND_FAKE "Compile fake HTTP backend" ON)    # HTTP 底层实现 假服务装配开关
 option(EDA_HTTP_BACKEND_MONGOOSE "Compile mongoose HTTP backend" ON)    # HTTP 底层实现 mongoose装配开关
+option(EDA_HTTP_CLIENT_BACKEND_FAKE "Compile fake HTTP client backend" ON)    # HTTP client 底层实现 假服务装配开关
 option(EDA_MODBUS_MASTER_BACKEND_FAKE "Compile fake Modbus Master backend" ON)    # MODBUS_MASTER 底层实现 假服务装配开关
 option(EDA_MODBUS_MASTER_BACKEND_LIBMODBUS_TCP "Compile libmodbus Modbus Master TCP backend" ON)  # MODBUS_MASTER_TCP 底层实现 libmodbus装配开关
 option(EDA_MODBUS_MASTER_BACKEND_LIBMODBUS_RTU "Compile libmodbus Modbus Master RTU backend" ON)  # MODBUS_MASTER_RTU 底层实现 libmodbus装配开关
@@ -24,6 +26,20 @@ if (EDA_ENABLE_HTTP)
     if (NOT EDA_HTTP_BACKEND_FAKE AND NOT EDA_HTTP_BACKEND_MONGOOSE)
         message(FATAL_ERROR
             "EDA_ENABLE_HTTP=ON requires at least one HTTP backend")
+    endif()
+endif()
+
+if (NOT EDA_ENABLE_HTTP_CLIENT)
+    if (EDA_HTTP_CLIENT_BACKEND_FAKE)
+        message(FATAL_ERROR
+            "HTTP client backends are enabled, but EDA_ENABLE_HTTP_CLIENT=OFF")
+    endif()
+endif()
+
+if (EDA_ENABLE_HTTP_CLIENT)
+    if (NOT EDA_HTTP_CLIENT_BACKEND_FAKE)
+        message(FATAL_ERROR
+            "EDA_ENABLE_HTTP_CLIENT=ON requires at least one HTTP client backend")
     endif()
 endif()
 
@@ -87,8 +103,10 @@ add_executable(eda_demo
     src/bootstrap/AppConfigValidation.cpp
     src/bootstrap/ApplicationBootstrap.cpp
     src/bootstrap/assembly/HttpAssembly.cpp
+    src/bootstrap/assembly/HttpClientAssembly.cpp
     src/bootstrap/assembly/ModbusMasterAssembly.cpp
     src/bootstrap/factory/HttpBackendFactory.cpp
+    src/bootstrap/factory/HttpClientBackendFactory.cpp
     src/bootstrap/factory/ModbusMasterBackendFactory.cpp
     src/demo/timer_test/TimerDemoLauncher.cpp
     src/infrastructure/runtime/ModbusPollingRuntime.cpp

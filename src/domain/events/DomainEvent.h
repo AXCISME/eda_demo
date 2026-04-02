@@ -188,6 +188,21 @@ inline const TypedEvent<WsMessage> WS_MESSAGE_RECEIVED {
 inline const TypedEvent<DeviceSample> WS_BROADCAST {
     make_event_type(EventCategory::COMMUNICATION, "WS_BROADCAST")
 };
+
+// 通信事件：http client 请求
+inline const TypedEvent<HttpClientRequest> HTTP_CLIENT_REQUESTED {
+    make_event_type(EventCategory::COMMUNICATION, "HTTP_CLIENT_REQUESTED")
+};
+
+// 通信事件：http client 响应
+inline const TypedEvent<HttpClientResponse> HTTP_CLIENT_RESPONSE_RECEIVED {
+    make_event_type(EventCategory::COMMUNICATION, "HTTP_CLIENT_RESPONSE_RECEIVED")
+};
+
+// 通信事件：http client 失败
+inline const TypedEvent<HttpClientFailure> HTTP_CLIENT_REQUEST_FAILED {
+    make_event_type(EventCategory::COMMUNICATION, "HTTP_CLIENT_REQUEST_FAILED")
+};
 }
 
 /**
