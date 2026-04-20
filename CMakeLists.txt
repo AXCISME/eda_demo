@@ -7,6 +7,7 @@ option(EDA_ENABLE_MODBUS_MASTER "Enable Modbus Master protocol" ON)       # MODB
 option(EDA_HTTP_BACKEND_FAKE "Compile fake HTTP backend" ON)    # HTTP 底层实现 假服务装配开关
 option(EDA_HTTP_BACKEND_MONGOOSE "Compile mongoose HTTP backend" ON)    # HTTP 底层实现 mongoose装配开关
 option(EDA_HTTP_CLIENT_BACKEND_FAKE "Compile fake HTTP client backend" ON)    # HTTP client 底层实现 假服务装配开关
+option(EDA_HTTP_CLIENT_BACKEND_MONGOOSE "Compile mongoose HTTP client backend" ON)    # HTTP client 底层实现 mongoose装配开关
 option(EDA_MODBUS_MASTER_BACKEND_FAKE "Compile fake Modbus Master backend" ON)    # MODBUS_MASTER 底层实现 假服务装配开关
 option(EDA_MODBUS_MASTER_BACKEND_LIBMODBUS_TCP "Compile libmodbus Modbus Master TCP backend" ON)  # MODBUS_MASTER_TCP 底层实现 libmodbus装配开关
 option(EDA_MODBUS_MASTER_BACKEND_LIBMODBUS_RTU "Compile libmodbus Modbus Master RTU backend" ON)  # MODBUS_MASTER_RTU 底层实现 libmodbus装配开关
@@ -30,14 +31,14 @@ if (EDA_ENABLE_HTTP)
 endif()
 
 if (NOT EDA_ENABLE_HTTP_CLIENT)
-    if (EDA_HTTP_CLIENT_BACKEND_FAKE)
+    if (EDA_HTTP_CLIENT_BACKEND_FAKE OR EDA_HTTP_CLIENT_BACKEND_MONGOOSE)
         message(FATAL_ERROR
             "HTTP client backends are enabled, but EDA_ENABLE_HTTP_CLIENT=OFF")
     endif()
 endif()
 
 if (EDA_ENABLE_HTTP_CLIENT)
-    if (NOT EDA_HTTP_CLIENT_BACKEND_FAKE)
+    if (NOT EDA_HTTP_CLIENT_BACKEND_FAKE AND NOT EDA_HTTP_CLIENT_BACKEND_MONGOOSE)
         message(FATAL_ERROR
             "EDA_ENABLE_HTTP_CLIENT=ON requires at least one HTTP client backend")
     endif()
@@ -119,9 +120,7 @@ target_include_directories(eda_demo PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/generate
 if (EDA_ENABLE_HTTP AND EDA_HTTP_BACKEND_MONGOOSE)
     target_sources(eda_demo PRIVATE
         core/infrastructure/transport/http/MongooseHttpServerAdapter.cpp
-        third_party/mongoose/mongoose.c
     )
-    target_include_directories(eda_demo PRIVATE third_party/mongoose)
 endif()
 
 if (EDA_ENABLE_MODBUS_MASTER AND EDA_MODBUS_MASTER_BACKEND_LIBMODBUS_TCP)
@@ -134,6 +133,20 @@ if (EDA_ENABLE_MODBUS_MASTER AND EDA_MODBUS_MASTER_BACKEND_LIBMODBUS_RTU)
     target_sources(eda_demo PRIVATE
         core/infrastructure/transport/modbus/LibmodbusMasterRtuAdapter.cpp
     )
+endif()
+
+if (EDA_ENABLE_HTTP_CLIENT AND EDA_HTTP_CLIENT_BACKEND_MONGOOSE)
+    target_sources(eda_demo PRIVATE
+        core/infrastructure/transport/http/MongooseHttpClientAdapter.cpp
+    )
+endif()
+
+if ((EDA_ENABLE_HTTP AND EDA_HTTP_BACKEND_MONGOOSE)
+    OR (EDA_ENABLE_HTTP_CLIENT AND EDA_HTTP_CLIENT_BACKEND_MONGOOSE))
+    target_sources(eda_demo PRIVATE
+        third_party/mongoose/mongoose.c
+    )
+    target_include_directories(eda_demo PRIVATE third_party/mongoose)
 endif()
 
 if (EDA_REQUIRE_LIBMODBUS)

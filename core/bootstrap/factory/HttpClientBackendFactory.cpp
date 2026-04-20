@@ -2,6 +2,7 @@
 
 #include "bootstrap/BuildFeatures.h"
 #include "infrastructure/transport/http/FakeHttpClientAdapter.h"
+#include "infrastructure/transport/http/MongooseHttpClientAdapter.h"
 #include "runtime/logging/Logger.h"
 
 bool HttpClientBackendFactory::is_compiled(HttpClientBackendId backend)
@@ -10,6 +11,9 @@ bool HttpClientBackendFactory::is_compiled(HttpClientBackendId backend)
     {
         case HttpClientBackendId::FAKE:
             return build_features::http_client && build_features::http_client_fake;
+
+        case HttpClientBackendId::MONGOOSE:
+            return build_features::http_client && build_features::http_client_mongoose;
 
         default:
             return false;
@@ -29,6 +33,13 @@ std::unique_ptr<IHttpClientAdapter> HttpClientBackendFactory::create(const HttpC
             if (is_compiled(config.backend))
             {
                 return std::make_unique<FakeHttpClientAdapter>();
+            }
+            break;
+
+        case HttpClientBackendId::MONGOOSE:
+            if (is_compiled(config.backend))
+            {
+                return std::make_unique<MongooseHttpClientAdapter>();
             }
             break;
 

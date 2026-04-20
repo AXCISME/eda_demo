@@ -10,7 +10,7 @@ int run_timer_demo()
     AppConfig config;
     config.http.enabled = false;
     config.http_client.enabled = true;
-    config.http_client.backend = HttpClientBackendId::FAKE;
+    config.http_client.backend = HttpClientBackendId::MONGOOSE;
     config.modbus_master.enabled = false;
 
     auto host = ApplicationBootstrap::create(

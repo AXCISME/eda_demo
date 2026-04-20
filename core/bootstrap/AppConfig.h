@@ -17,7 +17,8 @@ enum class HttpBackendId
 enum class HttpClientBackendId
 {
     NONE = 0,
-    FAKE
+    FAKE,
+    MONGOOSE
 };
 
 enum class ModbusMasterBackendId
@@ -43,6 +44,7 @@ inline const char* to_string(HttpClientBackendId backend)
     switch (backend)
     {
         case HttpClientBackendId::FAKE: return "fake";
+        case HttpClientBackendId::MONGOOSE: return "mongoose";
         default: return "none";
     }
 }

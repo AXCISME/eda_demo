@@ -60,6 +60,13 @@ std::vector<std::string> validate_app_config(const AppConfig& config)
                     }
                     break;
 
+                case HttpClientBackendId::MONGOOSE:
+                    if (!build_features::http_client_mongoose)
+                    {
+                        errors.push_back("HTTP client mongoose backend selected but not compiled into this build");
+                    }
+                    break;
+
                 default:
                     errors.push_back("HTTP client is enabled but backend is NONE");
                     break;

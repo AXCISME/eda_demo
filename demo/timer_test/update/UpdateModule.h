@@ -37,7 +37,7 @@ public:
             "update_data1",
             payload,
             "GET",
-            "http://fake.local/update/data1");
+            "http://www.baidu.com");
 
         Logger::info(
             "[UpdateModule] publish HTTP request for update_data1: request_id="
