@@ -7,6 +7,7 @@
 
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include "application/host/ApplicationHost.h"
 #include "bootstrap/AppConfig.h"
@@ -20,7 +21,7 @@ struct AssemblyContext
     }
 
     AppConfig config;
-    std::unique_ptr<IModbusMasterAdapter> modbus_master_adapter;
+    std::vector<std::unique_ptr<IModbusMasterAdapter>> modbus_master_adapters;
     ApplicationHost::HttpModuleFactory http_module_factory;
     ApplicationHost::HttpClientModuleFactory http_client_module_factory;
 };

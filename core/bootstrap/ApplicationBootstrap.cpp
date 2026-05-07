@@ -48,7 +48,7 @@ std::unique_ptr<ApplicationHost> ApplicationBootstrap::create(
 
     return std::make_unique<ApplicationHost>(
         std::move(context.config),
-        std::move(context.modbus_master_adapter),
+        std::move(context.modbus_master_adapters),
         std::move(context.http_module_factory),
         std::move(context.http_client_module_factory),
         std::move(timer_manager_factory),

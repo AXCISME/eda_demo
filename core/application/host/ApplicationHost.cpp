@@ -6,7 +6,7 @@
 
 ApplicationHost::ApplicationHost(
     AppConfig config,
-    std::unique_ptr<IModbusMasterAdapter> modbus_master_adapter,
+    std::vector<std::unique_ptr<IModbusMasterAdapter>> modbus_master_adapters,
     HttpModuleFactory http_module_factory,
     HttpClientModuleFactory http_client_module_factory,
     TimerManagerFactory timer_manager_factory,
@@ -15,15 +15,23 @@ ApplicationHost::ApplicationHost(
     ws_(bus_),
     loop_(bus_)
 {
-    if (config_.modbus_master.enabled && modbus_master_adapter)
+    if (config_.modbus_master.enabled)
     {
-        modbus_master_runtime_ = std::make_unique<ModbusPollingRuntime>(
-            bus_,
-            std::move(modbus_master_adapter),
-            config_.modbus_master.poll_interval_ms,
-            config_.modbus_master.slave_id,
-            config_.modbus_master.sample_base_addr);
-        modbus_master_ = std::make_unique<ModbusMasterModule>(bus_, *modbus_master_runtime_);
+        const auto device_count = config_.modbus_master.devices.size();
+        for (std::size_t index = 0;
+             index < device_count && index < modbus_master_adapters.size();
+             ++index)
+        {
+            modbus_device_runtimes_.push_back(std::make_unique<ModbusDeviceRuntime>(
+                bus_,
+                std::move(modbus_master_adapters[index]),
+                config_.modbus_master.devices[index]));
+        }
+
+        if (!modbus_device_runtimes_.empty())
+        {
+            modbus_master_ = std::make_unique<ModbusMasterModule>(bus_, modbus_device_runtimes_);
+        }
     }
 
     if (config_.http.enabled && http_module_factory)

@@ -169,9 +169,37 @@ inline const EventType NONE = make_event_type(EventCategory::NONE, "NONE");
 // 关机事件
 inline const EventType SHUTDOWN = make_event_type(EventCategory::RUNTIME, "SHUTDOWN");
 
-// 通信事件：modbus接收
+// 通信事件：modbus接收 TODO 即将废弃
 inline const TypedEvent<DeviceSample> MODBUS_SAMPLE_RECEIVED {
     make_event_type(EventCategory::COMMUNICATION, "MODBUS_SAMPLE_RECEIVED")
+};
+
+/**
+ * Modbus master 事件
+ */
+// Modbus事件：modbus读请求
+inline const TypedEvent<ModbusReadRequest>   READ_REQUEST   { 
+    make_event_type(EventCategory::COMMUNICATION, "MODBUS_READ_REQUEST") 
+};
+
+// Modbus事件：modbus读结果
+inline const TypedEvent<ModbusReadResult>    READ_RESULT    { 
+    make_event_type(EventCategory::COMMUNICATION, "MODBUS_READ_RESULT") 
+};
+
+// Modbus事件：modbus写请求
+inline const TypedEvent<ModbusWriteRequest>  WRITE_REQUEST  { 
+    make_event_type(EventCategory::COMMUNICATION, "MODBUS_WRITE_REQUEST") 
+};
+
+// Modbus事件：modbus写结果
+inline const TypedEvent<ModbusWriteResult>   WRITE_RESULT   { 
+    make_event_type(EventCategory::COMMUNICATION, "MODBUS_WRITE_RESULT") 
+};
+
+// Modbus事件：modbus操作错误
+inline const TypedEvent<ModbusOperationFailed> OP_FAILED      {
+     make_event_type(EventCategory::COMMUNICATION, "MODBUS_OP_FAILED") 
 };
 
 // 通信事件：websocket连接

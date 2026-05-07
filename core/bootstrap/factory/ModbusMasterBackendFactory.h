@@ -14,5 +14,5 @@ class ModbusMasterBackendFactory
 {
 public:
     static bool is_compiled(ModbusMasterBackendId backend);
-    static std::unique_ptr<IModbusMasterAdapter> create(const ModbusMasterConfig& config);
+    static std::unique_ptr<IModbusMasterAdapter> create(const ModbusDeviceConfig& config);
 };

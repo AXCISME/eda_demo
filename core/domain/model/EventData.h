@@ -1,9 +1,71 @@
 #pragma once
 
 #include <any>
+#include <cstdint>
 #include <string>
 #include <typeinfo>
 #include <unordered_map>
+#include <vector>
+
+/**
+ * modbus 寄存器类型
+ */
+enum class ModbusRegisterType { COIL, DISCRETE_INPUT, INPUT_REGISTER, HOLDING_REGISTER };
+
+inline const char* to_string(ModbusRegisterType type)
+{
+    switch (type)
+    {
+        case ModbusRegisterType::COIL: return "COIL";
+        case ModbusRegisterType::DISCRETE_INPUT: return "DISCRETE_INPUT";
+        case ModbusRegisterType::INPUT_REGISTER: return "INPUT_REGISTER";
+        case ModbusRegisterType::HOLDING_REGISTER: return "HOLDING_REGISTER";
+        default: return "UNKNOWN";
+    }
+}
+
+/**
+ * Modbnus master payload 结构体
+ */
+struct ModbusReadRequest {
+    std::string request_id;
+    std::string device_name;    // 路由到哪个 RTU 设备
+    ModbusRegisterType reg_type;
+    int slave_id;
+    int addr;
+    int count;
+};
+
+struct ModbusReadResult {
+    std::string request_id;
+    std::string device_name;
+    ModbusRegisterType reg_type;
+    int slave_id;
+    int addr;
+    std::vector<uint16_t> values;   // 读回的值
+};
+
+struct ModbusWriteRequest {
+    std::string request_id;
+    std::string device_name;
+    ModbusRegisterType reg_type;    // COIL 或 HOLDING_REGISTER
+    int slave_id;
+    int addr;
+    std::vector<uint16_t> values;   // 写单值时 vector size=1
+};
+struct ModbusWriteResult {
+    std::string request_id;
+    std::string device_name;
+    int slave_id;
+    int addr;
+    int count;                      // 成功写入的数量
+};
+
+struct ModbusOperationFailed {
+    std::string request_id;
+    std::string device_name;
+    std::string error_message;
+};
 
 struct DeviceSample
 {
@@ -61,6 +123,77 @@ struct EventPayloadFormatter
     static std::string to_string(const Payload&)
     {
         return std::string("{payload_type=") + typeid(Payload).name() + "}";
+    }
+};
+
+template<>
+struct EventPayloadFormatter<ModbusReadRequest>
+{
+    static std::string to_string(const ModbusReadRequest& request)
+    {
+        return "ModbusReadRequest{request_id=" + request.request_id
+            + ", device_name=" + request.device_name
+            + ", reg_type=" + ::to_string(request.reg_type)
+            + ", slave_id=" + std::to_string(request.slave_id)
+            + ", addr=" + std::to_string(request.addr)
+            + ", count=" + std::to_string(request.count)
+            + "}";
+    }
+};
+
+template<>
+struct EventPayloadFormatter<ModbusReadResult>
+{
+    static std::string to_string(const ModbusReadResult& result)
+    {
+        return "ModbusReadResult{request_id=" + result.request_id
+            + ", device_name=" + result.device_name
+            + ", reg_type=" + ::to_string(result.reg_type)
+            + ", slave_id=" + std::to_string(result.slave_id)
+            + ", addr=" + std::to_string(result.addr)
+            + ", count=" + std::to_string(result.values.size())
+            + "}";
+    }
+};
+
+template<>
+struct EventPayloadFormatter<ModbusWriteRequest>
+{
+    static std::string to_string(const ModbusWriteRequest& request)
+    {
+        return "ModbusWriteRequest{request_id=" + request.request_id
+            + ", device_name=" + request.device_name
+            + ", reg_type=" + ::to_string(request.reg_type)
+            + ", slave_id=" + std::to_string(request.slave_id)
+            + ", addr=" + std::to_string(request.addr)
+            + ", count=" + std::to_string(request.values.size())
+            + "}";
+    }
+};
+
+template<>
+struct EventPayloadFormatter<ModbusWriteResult>
+{
+    static std::string to_string(const ModbusWriteResult& result)
+    {
+        return "ModbusWriteResult{request_id=" + result.request_id
+            + ", device_name=" + result.device_name
+            + ", slave_id=" + std::to_string(result.slave_id)
+            + ", addr=" + std::to_string(result.addr)
+            + ", count=" + std::to_string(result.count)
+            + "}";
+    }
+};
+
+template<>
+struct EventPayloadFormatter<ModbusOperationFailed>
+{
+    static std::string to_string(const ModbusOperationFailed& failure)
+    {
+        return "ModbusOperationFailed{request_id=" + failure.request_id
+            + ", device_name=" + failure.device_name
+            + ", error_message=" + failure.error_message
+            + "}";
     }
 };
 
@@ -155,6 +288,31 @@ inline std::string format_event_payload(const EventData& data)
     }
 
     if (const auto* value = std::any_cast<DeviceSample>(&data))
+    {
+        return format_event_payload(*value);
+    }
+
+    if (const auto* value = std::any_cast<ModbusReadRequest>(&data))
+    {
+        return format_event_payload(*value);
+    }
+
+    if (const auto* value = std::any_cast<ModbusReadResult>(&data))
+    {
+        return format_event_payload(*value);
+    }
+
+    if (const auto* value = std::any_cast<ModbusWriteRequest>(&data))
+    {
+        return format_event_payload(*value);
+    }
+
+    if (const auto* value = std::any_cast<ModbusWriteResult>(&data))
+    {
+        return format_event_payload(*value);
+    }
+
+    if (const auto* value = std::any_cast<ModbusOperationFailed>(&data))
     {
         return format_event_payload(*value);
     }

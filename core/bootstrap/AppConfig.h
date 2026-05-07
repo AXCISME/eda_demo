@@ -6,6 +6,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 enum class HttpBackendId
 {
@@ -74,20 +75,25 @@ struct HttpClientConfig
     HttpClientBackendId backend {HttpClientBackendId::FAKE};
 };
 
-struct ModbusMasterConfig
-{
-    bool enabled {true};
+struct ModbusDeviceConfig {
+    std::string device_name;       // 唯一标识符，事件靠它路由
     ModbusMasterBackendId backend {ModbusMasterBackendId::FAKE};
-    int poll_interval_ms {1000};
-    int slave_id {1};
-    int sample_base_addr {100};
+    // TCP
     std::string tcp_host {"127.0.0.1"};
     int tcp_port {502};
+    // RTU
     std::string serial_device {"/dev/ttyS1"};
     int baudrate {9600};
     char parity {'N'};
     int data_bits {8};
     int stop_bits {1};
+    // 重连参数
+    int retry_delay_ms {500};
+};
+
+struct ModbusMasterConfig {
+    bool enabled {true};
+    std::vector<ModbusDeviceConfig> devices;   // 多设备
 };
 
 struct AppConfig

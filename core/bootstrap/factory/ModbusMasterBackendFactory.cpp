@@ -30,13 +30,8 @@ bool ModbusMasterBackendFactory::is_compiled(ModbusMasterBackendId backend)
     }
 }
 
-std::unique_ptr<IModbusMasterAdapter> ModbusMasterBackendFactory::create(const ModbusMasterConfig& config)
+std::unique_ptr<IModbusMasterAdapter> ModbusMasterBackendFactory::create(const ModbusDeviceConfig& config)
 {
-    if (!config.enabled)
-    {
-        return nullptr;
-    }
-
     switch (config.backend)
     {
         case ModbusMasterBackendId::FAKE:

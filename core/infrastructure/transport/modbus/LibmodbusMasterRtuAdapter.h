@@ -33,10 +33,43 @@ public:
         int count,
         std::vector<uint16_t>& out) override;
 
+    bool read_coils(
+        int slave_id,
+        int addr,
+        int count,
+        std::vector<uint16_t>& out) override;
+
+    bool read_discrete_inputs(
+        int slave_id,
+        int addr,
+        int count,
+        std::vector<uint16_t>& out) override;
+
+    bool read_input_registers(
+        int slave_id,
+        int addr,
+        int count,
+        std::vector<uint16_t>& out) override;
+
+    bool write_single_coil(
+        int slave_id,
+        int addr,
+        uint16_t value) override;
+
     bool write_single_register(
         int slave_id,
         int addr,
         uint16_t value) override;
+
+    bool write_multiple_coils(
+        int slave_id,
+        int addr,
+        const std::vector<uint16_t>& values) override;
+
+    bool write_multiple_registers(
+        int slave_id,
+        int addr,
+        const std::vector<uint16_t>& values) override;
 
 private:
     bool ensure_slave(int slave_id);

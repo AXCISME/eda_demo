@@ -10,7 +10,7 @@
 #include "runtime/bus/EventBus.h"
 #include "runtime/loop/EventLoop.h"
 #include "runtime/scheduler/TimerManager.h"
-#include "infrastructure/runtime/ModbusPollingRuntime.h"
+#include "infrastructure/runtime/ModbusDeviceRuntime.h"
 #include "infrastructure/transport/modbus/IModbusMasterAdapter.h"
 #include "interfaces/http/HttpClientModule.h"
 #include "interfaces/http/HttpModule.h"
@@ -27,7 +27,7 @@ public:
 
     ApplicationHost(
         AppConfig config,
-        std::unique_ptr<IModbusMasterAdapter> modbus_master_adapter,
+        std::vector<std::unique_ptr<IModbusMasterAdapter>> modbus_master_adapters,
         HttpModuleFactory http_module_factory = {},
         HttpClientModuleFactory http_client_module_factory = {},
         TimerManagerFactory timer_manager_factory = {},
@@ -45,7 +45,7 @@ private:
     AppConfig config_;
     EventBus bus_;
 
-    std::unique_ptr<ModbusPollingRuntime> modbus_master_runtime_;
+    std::vector<std::unique_ptr<ModbusDeviceRuntime>> modbus_device_runtimes_;
     std::unique_ptr<ModbusMasterModule> modbus_master_;
 
     std::unique_ptr<HttpModule> http_;

@@ -69,12 +69,25 @@ endif()
 
 set(EDA_VENDORED_LIBMODBUS_INCLUDE_DIR
     "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libmodbus/include")
-set(EDA_VENDORED_LIBMODBUS_LIBRARY
+set(EDA_VENDORED_LIBMODBUS_LIBRARY_ARCH
+    "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libmodbus/lib/libmodbus_${CMAKE_SYSTEM_PROCESSOR}.a")
+set(EDA_VENDORED_LIBMODBUS_LIBRARY_GENERIC
     "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libmodbus/lib/libmodbus.a")
 
 if (EDA_REQUIRE_LIBMODBUS)
-    if (EXISTS "${EDA_VENDORED_LIBMODBUS_INCLUDE_DIR}/modbus/modbus.h"
-        AND EXISTS "${EDA_VENDORED_LIBMODBUS_LIBRARY}")
+    if (EXISTS "${EDA_VENDORED_LIBMODBUS_INCLUDE_DIR}/modbus/modbus.h")
+        if (EXISTS "${EDA_VENDORED_LIBMODBUS_LIBRARY_ARCH}")
+            set(EDA_VENDORED_LIBMODBUS_LIBRARY "${EDA_VENDORED_LIBMODBUS_LIBRARY_ARCH}")
+        elseif (EXISTS "${EDA_VENDORED_LIBMODBUS_LIBRARY_GENERIC}")
+            set(EDA_VENDORED_LIBMODBUS_LIBRARY "${EDA_VENDORED_LIBMODBUS_LIBRARY_GENERIC}")
+        else()
+            unset(EDA_VENDORED_LIBMODBUS_LIBRARY)
+        endif()
+    else()
+        unset(EDA_VENDORED_LIBMODBUS_LIBRARY)
+    endif()
+
+    if (DEFINED EDA_VENDORED_LIBMODBUS_LIBRARY)
         set(EDA_LIBMODBUS_INCLUDE_DIR "${EDA_VENDORED_LIBMODBUS_INCLUDE_DIR}")
         set(EDA_LIBMODBUS_LIBRARY "${EDA_VENDORED_LIBMODBUS_LIBRARY}")
         message(STATUS "Using vendored libmodbus from third_party/libmodbus")
@@ -110,7 +123,7 @@ add_executable(eda_demo
     core/bootstrap/factory/HttpClientBackendFactory.cpp
     core/bootstrap/factory/ModbusMasterBackendFactory.cpp
     demo/timer_test/TimerDemoLauncher.cpp
-    core/infrastructure/runtime/ModbusPollingRuntime.cpp
+    core/infrastructure/runtime/ModbusDeviceRuntime.cpp
 )
 
 target_include_directories(eda_demo PRIVATE core)
@@ -155,4 +168,4 @@ if (EDA_REQUIRE_LIBMODBUS)
 endif()
 
 find_package(Threads REQUIRED)
-target_link_libraries(eda_demo PRIVATE Threads::Threads)
+target_link_libraries(eda_demo PRIVATE Threads::Threads -lpthread)
