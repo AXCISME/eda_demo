@@ -1,20 +1,23 @@
 cmake_minimum_required(VERSION 3.10)
 project(eda_demo LANGUAGES C CXX)
 
-option(EDA_ENABLE_HTTP "Enable HTTP transport" ON)          # HTTP 能力开关
-option(EDA_ENABLE_HTTP_CLIENT "Enable HTTP client transport" ON)          # HTTP client 能力开关
-option(EDA_ENABLE_MODBUS_MASTER "Enable Modbus Master protocol" ON)       # MODBUS_MASTER 能力开关
-option(EDA_HTTP_BACKEND_FAKE "Compile fake HTTP backend" ON)    # HTTP 底层实现 假服务装配开关
-option(EDA_HTTP_BACKEND_MONGOOSE "Compile mongoose HTTP backend" ON)    # HTTP 底层实现 mongoose装配开关
-option(EDA_HTTP_CLIENT_BACKEND_FAKE "Compile fake HTTP client backend" ON)    # HTTP client 底层实现 假服务装配开关
-option(EDA_HTTP_CLIENT_BACKEND_MONGOOSE "Compile mongoose HTTP client backend" ON)    # HTTP client 底层实现 mongoose装配开关
-option(EDA_MODBUS_MASTER_BACKEND_FAKE "Compile fake Modbus Master backend" ON)    # MODBUS_MASTER 底层实现 假服务装配开关
-option(EDA_MODBUS_MASTER_BACKEND_LIBMODBUS_TCP "Compile libmodbus Modbus Master TCP backend" ON)  # MODBUS_MASTER_TCP 底层实现 libmodbus装配开关
-option(EDA_MODBUS_MASTER_BACKEND_LIBMODBUS_RTU "Compile libmodbus Modbus Master RTU backend" ON)  # MODBUS_MASTER_RTU 底层实现 libmodbus装配开关
+option(EDA_ENABLE_HTTP "Enable HTTP transport" ON)
+option(EDA_ENABLE_HTTP_CLIENT "Enable HTTP client transport" ON)
+option(EDA_ENABLE_MODBUS_MASTER "Enable Modbus Master protocol" ON)
+option(EDA_HTTP_BACKEND_FAKE "Compile fake HTTP backend" ON)
+option(EDA_HTTP_BACKEND_MONGOOSE "Compile mongoose HTTP backend" ON)
+option(EDA_HTTP_CLIENT_BACKEND_FAKE "Compile fake HTTP client backend" ON)
+option(EDA_HTTP_CLIENT_BACKEND_MONGOOSE "Compile mongoose HTTP client backend" ON)
+option(EDA_MODBUS_MASTER_BACKEND_FAKE "Compile fake Modbus Master backend" ON)
+option(EDA_MODBUS_MASTER_BACKEND_LIBMODBUS_TCP "Compile libmodbus Modbus Master TCP backend" ON)
+option(EDA_MODBUS_MASTER_BACKEND_LIBMODBUS_RTU "Compile libmodbus Modbus Master RTU backend" ON)
+option(EDA_BUILD_LIBRARY "Build eda_core static library" ON)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+# ── 配置校验 ──────────────────────────────────────────────────────────
 
 if (NOT EDA_ENABLE_HTTP)
     if (EDA_HTTP_BACKEND_FAKE OR EDA_HTTP_BACKEND_MONGOOSE)
@@ -62,6 +65,8 @@ if (EDA_ENABLE_MODBUS_MASTER)
     endif()
 endif()
 
+# ── libmodbus ──────────────────────────────────────────────────────────
+
 set(EDA_REQUIRE_LIBMODBUS OFF)
 if (EDA_ENABLE_MODBUS_MASTER AND (EDA_MODBUS_MASTER_BACKEND_LIBMODBUS_TCP OR EDA_MODBUS_MASTER_BACKEND_LIBMODBUS_RTU))
     set(EDA_REQUIRE_LIBMODBUS ON)
@@ -106,66 +111,142 @@ if (EDA_REQUIRE_LIBMODBUS)
     endif()
 endif()
 
+# ── BuildFeatures.h ────────────────────────────────────────────────────
+
 configure_file(
     core/bootstrap/BuildFeatures.h.in
     ${CMAKE_CURRENT_BINARY_DIR}/generated/bootstrap/BuildFeatures.h
 )
 
-add_executable(eda_demo
-    main.cpp
-    core/application/host/ApplicationHost.cpp
-    core/bootstrap/AppConfigValidation.cpp
-    core/bootstrap/ApplicationBootstrap.cpp
-    core/bootstrap/assembly/HttpAssembly.cpp
-    core/bootstrap/assembly/HttpClientAssembly.cpp
-    core/bootstrap/assembly/ModbusMasterAssembly.cpp
-    core/bootstrap/factory/HttpBackendFactory.cpp
-    core/bootstrap/factory/HttpClientBackendFactory.cpp
-    core/bootstrap/factory/ModbusMasterBackendFactory.cpp
-    demo/timer_test/TimerDemoLauncher.cpp
-    core/infrastructure/runtime/ModbusDeviceRuntime.cpp
-)
+# ── eda_core 静态库 ────────────────────────────────────────────────────
 
-target_include_directories(eda_demo PRIVATE core)
-target_include_directories(eda_demo PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(eda_demo PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/generated)
-
-if (EDA_ENABLE_HTTP AND EDA_HTTP_BACKEND_MONGOOSE)
-    target_sources(eda_demo PRIVATE
-        core/infrastructure/transport/http/MongooseHttpServerAdapter.cpp
+if (EDA_BUILD_LIBRARY)
+    add_library(eda_core STATIC
+        core/application/host/ApplicationHost.cpp
+        core/bootstrap/AppConfigValidation.cpp
+        core/bootstrap/ApplicationBootstrap.cpp
+        core/bootstrap/assembly/HttpAssembly.cpp
+        core/bootstrap/assembly/HttpClientAssembly.cpp
+        core/bootstrap/assembly/ModbusMasterAssembly.cpp
+        core/bootstrap/factory/HttpBackendFactory.cpp
+        core/bootstrap/factory/HttpClientBackendFactory.cpp
+        core/bootstrap/factory/ModbusMasterBackendFactory.cpp
+        core/infrastructure/runtime/ModbusDeviceRuntime.cpp
+        core/infrastructure/runtime/ModbusPollingRuntime.cpp
     )
-endif()
 
-if (EDA_ENABLE_MODBUS_MASTER AND EDA_MODBUS_MASTER_BACKEND_LIBMODBUS_TCP)
-    target_sources(eda_demo PRIVATE
-        core/infrastructure/transport/modbus/LibmodbusMasterTcpAdapter.cpp
+    target_include_directories(eda_core PUBLIC
+        core
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_BINARY_DIR}/generated
     )
+
+    find_package(Threads REQUIRED)
+    target_link_libraries(eda_core PUBLIC Threads::Threads -lpthread)
+
+    if (EDA_ENABLE_HTTP AND EDA_HTTP_BACKEND_MONGOOSE)
+        target_sources(eda_core PRIVATE
+            core/infrastructure/transport/http/MongooseHttpServerAdapter.cpp
+        )
+    endif()
+
+    if (EDA_ENABLE_MODBUS_MASTER AND EDA_MODBUS_MASTER_BACKEND_LIBMODBUS_TCP)
+        target_sources(eda_core PRIVATE
+            core/infrastructure/transport/modbus/LibmodbusMasterTcpAdapter.cpp
+        )
+    endif()
+
+    if (EDA_ENABLE_MODBUS_MASTER AND EDA_MODBUS_MASTER_BACKEND_LIBMODBUS_RTU)
+        target_sources(eda_core PRIVATE
+            core/infrastructure/transport/modbus/LibmodbusMasterRtuAdapter.cpp
+        )
+    endif()
+
+    if (EDA_ENABLE_HTTP_CLIENT AND EDA_HTTP_CLIENT_BACKEND_MONGOOSE)
+        target_sources(eda_core PRIVATE
+            core/infrastructure/transport/http/MongooseHttpClientAdapter.cpp
+        )
+    endif()
+
+    if ((EDA_ENABLE_HTTP AND EDA_HTTP_BACKEND_MONGOOSE)
+        OR (EDA_ENABLE_HTTP_CLIENT AND EDA_HTTP_CLIENT_BACKEND_MONGOOSE))
+        target_sources(eda_core PRIVATE
+            third_party/mongoose/mongoose.c
+        )
+        target_include_directories(eda_core PUBLIC third_party/mongoose)
+    endif()
+
+    if (EDA_REQUIRE_LIBMODBUS)
+        target_include_directories(eda_core PUBLIC ${EDA_LIBMODBUS_INCLUDE_DIR})
+        target_link_libraries(eda_core PUBLIC ${EDA_LIBMODBUS_LIBRARY})
+    endif()
 endif()
 
-if (EDA_ENABLE_MODBUS_MASTER AND EDA_MODBUS_MASTER_BACKEND_LIBMODBUS_RTU)
-    target_sources(eda_demo PRIVATE
-        core/infrastructure/transport/modbus/LibmodbusMasterRtuAdapter.cpp
+# ── eda_demo 可执行文件 ────────────────────────────────────────────────
+
+if (EDA_BUILD_LIBRARY)
+    add_executable(eda_demo
+        main.cpp
+        demo/timer_test/TimerDemoLauncher.cpp
     )
-endif()
-
-if (EDA_ENABLE_HTTP_CLIENT AND EDA_HTTP_CLIENT_BACKEND_MONGOOSE)
-    target_sources(eda_demo PRIVATE
-        core/infrastructure/transport/http/MongooseHttpClientAdapter.cpp
+    target_link_libraries(eda_demo PRIVATE eda_core)
+else()
+    add_executable(eda_demo
+        main.cpp
+        core/application/host/ApplicationHost.cpp
+        core/bootstrap/AppConfigValidation.cpp
+        core/bootstrap/ApplicationBootstrap.cpp
+        core/bootstrap/assembly/HttpAssembly.cpp
+        core/bootstrap/assembly/HttpClientAssembly.cpp
+        core/bootstrap/assembly/ModbusMasterAssembly.cpp
+        core/bootstrap/factory/HttpBackendFactory.cpp
+        core/bootstrap/factory/HttpClientBackendFactory.cpp
+        core/bootstrap/factory/ModbusMasterBackendFactory.cpp
+        demo/timer_test/TimerDemoLauncher.cpp
+        core/infrastructure/runtime/ModbusDeviceRuntime.cpp
     )
-endif()
 
-if ((EDA_ENABLE_HTTP AND EDA_HTTP_BACKEND_MONGOOSE)
-    OR (EDA_ENABLE_HTTP_CLIENT AND EDA_HTTP_CLIENT_BACKEND_MONGOOSE))
-    target_sources(eda_demo PRIVATE
-        third_party/mongoose/mongoose.c
-    )
-    target_include_directories(eda_demo PRIVATE third_party/mongoose)
-endif()
+    target_include_directories(eda_demo PRIVATE core)
+    target_include_directories(eda_demo PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    target_include_directories(eda_demo PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/generated)
 
-if (EDA_REQUIRE_LIBMODBUS)
-    target_include_directories(eda_demo PRIVATE ${EDA_LIBMODBUS_INCLUDE_DIR})
-    target_link_libraries(eda_demo PRIVATE ${EDA_LIBMODBUS_LIBRARY})
-endif()
+    if (EDA_ENABLE_HTTP AND EDA_HTTP_BACKEND_MONGOOSE)
+        target_sources(eda_demo PRIVATE
+            core/infrastructure/transport/http/MongooseHttpServerAdapter.cpp
+        )
+    endif()
 
-find_package(Threads REQUIRED)
-target_link_libraries(eda_demo PRIVATE Threads::Threads -lpthread)
+    if (EDA_ENABLE_MODBUS_MASTER AND EDA_MODBUS_MASTER_BACKEND_LIBMODBUS_TCP)
+        target_sources(eda_demo PRIVATE
+            core/infrastructure/transport/modbus/LibmodbusMasterTcpAdapter.cpp
+        )
+    endif()
+
+    if (EDA_ENABLE_MODBUS_MASTER AND EDA_MODBUS_MASTER_BACKEND_LIBMODBUS_RTU)
+        target_sources(eda_demo PRIVATE
+            core/infrastructure/transport/modbus/LibmodbusMasterRtuAdapter.cpp
+        )
+    endif()
+
+    if (EDA_ENABLE_HTTP_CLIENT AND EDA_HTTP_CLIENT_BACKEND_MONGOOSE)
+        target_sources(eda_demo PRIVATE
+            core/infrastructure/transport/http/MongooseHttpClientAdapter.cpp
+        )
+    endif()
+
+    if ((EDA_ENABLE_HTTP AND EDA_HTTP_BACKEND_MONGOOSE)
+        OR (EDA_ENABLE_HTTP_CLIENT AND EDA_HTTP_CLIENT_BACKEND_MONGOOSE))
+        target_sources(eda_demo PRIVATE
+            third_party/mongoose/mongoose.c
+        )
+        target_include_directories(eda_demo PRIVATE third_party/mongoose)
+    endif()
+
+    if (EDA_REQUIRE_LIBMODBUS)
+        target_include_directories(eda_demo PRIVATE ${EDA_LIBMODBUS_INCLUDE_DIR})
+        target_link_libraries(eda_demo PRIVATE ${EDA_LIBMODBUS_LIBRARY})
+    endif()
+
+    find_package(Threads REQUIRED)
+    target_link_libraries(eda_demo PRIVATE Threads::Threads -lpthread)
+endif()
