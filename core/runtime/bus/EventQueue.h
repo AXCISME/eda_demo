@@ -14,6 +14,13 @@ public:
         cv_.notify_one();   // 通知一个正在等待的线程
     }
 
+    void clear() {
+        std::lock_guard<std::mutex> lock(mutex_);
+        while (!queue_.empty()) {
+            queue_.pop();
+        }
+    }
+
     bool wait_and_pop(Event& out, int timeout_ms) {     // 消费者调用
         std::unique_lock<std::mutex> lock(mutex_);
 

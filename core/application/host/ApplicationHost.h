@@ -35,9 +35,28 @@ public:
 
     ~ApplicationHost();
 
+    /**
+     * 初始化所有子系统。必须在 create() 之后、run() 之前调用。
+     * 只能调用一次：重复调用会被忽略，destroy() 之后调用会报错。
+     */
     void init();
+
+    /**
+     * 运行事件循环（阻塞直到 stop() 被调用）。
+     */
     void run();
+
+    /**
+     * 停止事件循环和所有子模块。可重复调用（幂等）。
+     * 调用后可通过 run() 重新进入事件循环。
+     */
     void stop();
+
+    /**
+     * 终止性销毁：释放所有资源，清除 EventBus 订阅者，使 host 不可再用。
+     * 调用后必须通过 ApplicationBootstrap::create() 创建新实例，不能对同一对象 re-init。
+     */
+    void destroy();
 
     void simulate_ws_client_connect(const std::string& client_id);
     void simulate_ws_client_message(const std::string& client_id, int addr, int value);
@@ -54,4 +73,8 @@ private:
     std::vector<std::unique_ptr<IBusinessModule>> business_modules_;
     WebSocketModule ws_;
     EventLoop loop_;
+
+    bool initialized_{false};
+    bool stopped_{false};
+    bool destroyed_{false};
 };
