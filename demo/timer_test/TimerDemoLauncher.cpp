@@ -59,5 +59,7 @@ int run_timer_demo()
     Logger::info("[TimerDemo] running continuously; stop the process to exit");
     host->run();
 
+    host->destroy();
+
     return 0;
 }

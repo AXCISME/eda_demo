@@ -57,10 +57,21 @@ ApplicationHost::ApplicationHost(
 }
 
 ApplicationHost::~ApplicationHost() {
-    stop();
+    if (!destroyed_) {
+        destroy();
+    }
 }
 
 void ApplicationHost::init() {
+    if (destroyed_) {
+        Logger::error("[ApplicationHost] cannot init a destroyed host; create a new one via ApplicationBootstrap::create()");
+        return;
+    }
+    if (initialized_) {
+        Logger::warn("[ApplicationHost] already initialized, skipping duplicate init()");
+        return;
+    }
+
     if (modbus_master_)
     {
         modbus_master_->init();
@@ -86,7 +97,7 @@ void ApplicationHost::init() {
     {
         Logger::error("[ApplicationHost] failed to start Modbus Master runtime");
     }
-    
+
     if (http_)
     {
         http_->init();
@@ -95,6 +106,8 @@ void ApplicationHost::init() {
             Logger::error("[ApplicationHost] failed to start HTTP server");
         }
     }
+
+    initialized_ = true;
 }
 
 void ApplicationHost::run() {
@@ -102,6 +115,10 @@ void ApplicationHost::run() {
 }
 
 void ApplicationHost::stop() {
+    if (stopped_) {
+        return;
+    }
+
     if (http_)
     {
         http_->stop();
@@ -115,6 +132,37 @@ void ApplicationHost::stop() {
         modbus_master_->stop();
     }
     loop_.stop();
+
+    stopped_ = true;
+}
+
+void ApplicationHost::destroy() {
+    if (destroyed_) {
+        return;
+    }
+
+    // 1. 停止事件循环和所有子模块
+    stop();
+
+    // 2. 释放所有业务模块
+    business_modules_.clear();
+
+    // 3. 释放定时器管理器，并清除 EventLoop 中的悬挂指针
+    timer_manager_.reset();
+    loop_.set_timer_manager(nullptr);
+
+    // 4. 释放 HTTP 模块
+    http_client_.reset();
+    http_.reset();
+
+    // 5. 释放 Modbus 模块
+    modbus_master_.reset();
+    modbus_device_runtimes_.clear();
+
+    // 6. 清除 EventBus 所有订阅者，消除悬挂闭包（ws_ 等模块的订阅在此一并清理）
+    bus_.clear();
+
+    destroyed_ = true;
 }
 
 void ApplicationHost::simulate_ws_client_connect(const std::string& client_id) {
