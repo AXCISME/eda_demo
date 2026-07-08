@@ -70,6 +70,15 @@ public:
         return queue_.wait_and_pop(event, timeout_ms);
     }
 
+    /**
+     * 清除所有订阅者和未处理的事件。
+     * 调用后 EventBus 恢复为构造后的空状态，消除 destroy() 后的悬挂闭包风险。
+     */
+    void clear() {
+        subscribers_.clear();
+        queue_.clear();
+    }
+
     void dispatch(const Event& event) {
         auto it = subscribers_.find(event.type);
         if (it == subscribers_.end())

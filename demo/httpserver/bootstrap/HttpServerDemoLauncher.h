@@ -61,5 +61,7 @@ inline int run_httpserver_demo()
         simulator.join();
     }
 
+    host->destroy();
+
     return 0;
 }
