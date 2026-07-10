@@ -178,7 +178,31 @@ if (EDA_BUILD_LIBRARY)
 
     if (EDA_REQUIRE_LIBMODBUS)
         target_include_directories(eda_core PUBLIC ${EDA_LIBMODBUS_INCLUDE_DIR})
-        target_link_libraries(eda_core PUBLIC ${EDA_LIBMODBUS_LIBRARY})
+
+        set(_LIBMODBUS_EXTRACT_DIR "${CMAKE_CURRENT_BINARY_DIR}/_modbus_objs")
+        set(_LIBMODBUS_MERGE_SCRIPT "${CMAKE_CURRENT_BINARY_DIR}/merge_libmodbus.cmake")
+        file(WRITE ${_LIBMODBUS_MERGE_SCRIPT} [[
+if(EXISTS ${_EXTRACT_DIR})
+    execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${_EXTRACT_DIR})
+endif()
+execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${_EXTRACT_DIR})
+execute_process(COMMAND ${_AR} x ${_LIBMODBUS} WORKING_DIRECTORY ${_EXTRACT_DIR})
+file(GLOB _OBJS "${_EXTRACT_DIR}/*.o")
+execute_process(COMMAND ${_AR} rcs ${_EDACORE} ${_OBJS})
+execute_process(COMMAND ${_RANLIB} ${_EDACORE})
+]])
+
+        add_custom_command(TARGET eda_core POST_BUILD
+            COMMAND ${CMAKE_COMMAND}
+                -D_EXTRACT_DIR=${_LIBMODBUS_EXTRACT_DIR}
+                -D_AR=${CMAKE_AR}
+                -D_RANLIB=${CMAKE_RANLIB}
+                -D_LIBMODBUS=${EDA_LIBMODBUS_LIBRARY}
+                -D_EDACORE=$<TARGET_FILE:eda_core>
+                -P ${_LIBMODBUS_MERGE_SCRIPT}
+            COMMENT "Merging libmodbus objects into libeda_core.a"
+            VERBATIM
+        )
     endif()
 endif()
 
