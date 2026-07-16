@@ -2,8 +2,11 @@
 
 #include "bootstrap/BuildFeatures.h"
 #include "infrastructure/transport/http/FakeHttpClientAdapter.h"
-#include "infrastructure/transport/http/MongooseHttpClientAdapter.h"
 #include "runtime/logging/Logger.h"
+
+#if EDA_ENABLE_HTTP_CLIENT && EDA_HTTP_CLIENT_BACKEND_MONGOOSE
+#include "infrastructure/transport/http/MongooseHttpClientAdapter.h"
+#endif
 
 bool HttpClientBackendFactory::is_compiled(HttpClientBackendId backend)
 {
@@ -37,11 +40,15 @@ std::unique_ptr<IHttpClientAdapter> HttpClientBackendFactory::create(const HttpC
             break;
 
         case HttpClientBackendId::MONGOOSE:
+#if EDA_ENABLE_HTTP_CLIENT && EDA_HTTP_CLIENT_BACKEND_MONGOOSE
             if (is_compiled(config.backend))
             {
                 return std::make_unique<MongooseHttpClientAdapter>();
             }
             break;
+#else
+            break;
+#endif
 
         default:
             break;

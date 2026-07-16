@@ -7,16 +7,20 @@
 
 class Logger {
 public:
+    static void enable()  { enabled_ = true; }
+    static void disable() { enabled_ = false; }
+    static bool is_enabled() { return enabled_; }
+
     static void info(const std::string& msg) {
-        std::cout << "[INFO] " << msg << std::endl;
+        if (enabled_) std::cout << "[INFO] " << msg << std::endl;
     }
 
     static void warn(const std::string& msg) {
-        std::cout << "[WARN] " << msg << std::endl;
+        if (enabled_) std::cout << "[WARN] " << msg << std::endl;
     }
 
     static void error(const std::string& msg) {
-        std::cout << "[ERROR] " << msg << std::endl;
+        if (enabled_) std::cout << "[ERROR] " << msg << std::endl;
     }
 
     static std::string to_string(const DeviceSample& d) {
@@ -45,4 +49,9 @@ public:
     static std::string to_string(const EventData& data) {
         return format_event_payload(data);
     }
+
+private:
+    static bool enabled_;
 };
+
+inline bool Logger::enabled_ = true;
